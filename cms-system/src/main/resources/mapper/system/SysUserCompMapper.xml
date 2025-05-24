@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cms.system.mapper.SysUserCompMapper">
+
+    <resultMap type="SysUserComp" id="SysUserCompResult">
+        <result property="userId"     column="user_id"      />
+        <result property="compId"     column="comp_id"      />
+    </resultMap>
+
+    <delete id="deleteUserCompByUserId" parameterType="Long">
+        delete from sys_user_comp where user_id=#{userId}
+    </delete>
+
+    <select id="countUserCompByCompId" resultType="Integer">
+        select count(1) from sys_user_comp where comp_id=#{compId}
+    </select>
+
+    <delete id="deleteUserComp" parameterType="Long">
+        delete from sys_user_comp where user_id in
+        <foreach collection="array" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+    <insert id="batchUserComp">
+        insert into `cms-sj`.sys_user_comp(user_id, comp_id) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.userId},#{item.compId})
+        </foreach>
+    </insert>
+
+    <delete id="deleteUserCompInfo" parameterType="SysUserComp">
+        delete from sys_user_comp where user_id=#{userId} and comp_id=#{compId}
+    </delete>
+
+    <delete id="deleteUserCompInfos">
+        delete from sys_user_comp where comp_id=#{compId} and user_id in
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+</mapper>
