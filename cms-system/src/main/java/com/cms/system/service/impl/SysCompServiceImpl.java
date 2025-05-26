@@ -226,12 +226,12 @@ public class SysCompServiceImpl implements ISysCompService {
      */
     private String generateCacheKey(SysComp sysComp, String order) {
         StringBuilder keyBuilder = new StringBuilder(CacheConstants.COMP_LIST_KEY);
-        keyBuilder.append(sysComp.getCompId() != null ? sysComp.getCompId() : "")
-              .append(sysComp.getCompName() != null ? sysComp.getCompName() : "")
-              .append(sysComp.getCompCategory() != null ? sysComp.getCompCategory() : "")
-              .append(sysComp.getCompStatus() != null ? sysComp.getCompStatus() : "")
-              .append(sysComp.getStatus() != null ? sysComp.getStatus() : "")
-              .append(order != null ? order : "");
+        keyBuilder.append("compId=").append(sysComp.getCompId() != null ? sysComp.getCompId() : "")
+              .append("&compName=").append(sysComp.getCompName() != null ? sysComp.getCompName() : "")
+              .append("&compCategory=").append(sysComp.getCompCategory() != null ? sysComp.getCompCategory() : "")
+              .append("&compStatus=").append(sysComp.getCompStatus() != null ? sysComp.getCompStatus() : "")
+              .append("&status=").append(sysComp.getStatus() != null ? sysComp.getStatus() : "")
+              .append("&order=").append(order != null ? order : "");
         return DigestUtils.md5Hex(keyBuilder.toString());
     }
 
@@ -496,6 +496,7 @@ public class SysCompServiceImpl implements ISysCompService {
      * 1. 根据参数决定推荐方式
      * 2. 支持随机推荐、类别推荐、访问频率推荐、最新竞赛推荐
      * 3. 直接从数据库加载数据，避免缓存干扰
+     * 4. 新增类别推荐逻辑处理
      *
      * @param type 推荐类型（random、category、access、latest）
      * @param category 竞赛类别（仅在 type=category 时有效）
@@ -533,6 +534,13 @@ public class SysCompServiceImpl implements ISysCompService {
                 case "random":
                     orderBy = "RAND()";
                     break;
+                case "category":
+                    if (category == null) {
+                        throw new ServiceException("类别参数不能为空", 400);
+                    }
+                    queryCondition.setCompCategory(category);
+                    orderBy = "access_frequency DESC";
+                    break;
                 case "id":
                     orderBy = "comp_id DESC";
                     break;
@@ -545,9 +553,9 @@ public class SysCompServiceImpl implements ISysCompService {
 
             // 去重并限制返回结果数量
             result = result.stream()
-                         .distinct()
-                         .limit(count)
-                         .toList();
+                    .distinct()
+                    .limit(count)
+                    .toList();
 
             // 将结果写入缓存
             int ttl = CacheConstants.DEFAULT_CACHE_TTL + new Random().nextInt(300);

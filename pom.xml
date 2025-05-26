@@ -183,12 +183,7 @@
                 <version>${kaptcha.version}</version>
             </dependency>
 
-            <!-- 代码生成-->
-            <dependency>
-                <groupId>com.cms</groupId>
-                <artifactId>cms-generator</artifactId>
-                <version>${cms.version}</version>
-            </dependency>
+
 
             <!-- 核心模块-->
             <dependency>
@@ -235,7 +230,6 @@
         <module>cms-admin</module>
         <module>cms-framework</module>
         <module>cms-system</module>
-        <module>cms-generator</module>
         <module>cms-common</module>
 <!--        <module>cms-manage</module>-->
     </modules>

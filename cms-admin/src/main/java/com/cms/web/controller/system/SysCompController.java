@@ -198,7 +198,23 @@ public R<SysComp> getInfo(
             @RequestParam(required = false) Character category,
             @ApiParam(value = "推荐数量", required = true) 
             @RequestParam int count) {
-        return R.ok(sysCompService.recommendCompetitions(type, category, count));
+        // 参数校验
+        if (count <= 0) {
+            return R.fail("推荐数量必须大于0");
+        }
+        if ("category".equalsIgnoreCase(type) && category == null) {
+            return R.fail("当推荐类型为category时，必须提供竞赛类别参数");
+        }
+        
+        logger.info("请求推荐竞赛, type={}, category={}, count={}", type, category, count);
+        
+        try {
+            List<SysComp> result = sysCompService.recommendCompetitions(type, category, count);
+            return R.ok(result);
+        } catch (Exception e) {
+            logger.error("推荐竞赛信息失败: {}", e.getMessage());
+            return R.fail(e.getMessage());
+        }
     }
 
     /**

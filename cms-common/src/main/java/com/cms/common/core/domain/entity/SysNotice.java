@@ -1,7 +1,14 @@
 package com.cms.common.core.domain.entity;
 
+import com.cms.common.annotation.Excel;
 import com.cms.common.annotation.Xss;
 import com.cms.common.core.domain.BaseEntity;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -12,78 +19,57 @@ import javax.validation.constraints.Size;
  * 通知公告表 sys_notice的实体类：
  * 用于公告信息
  * @author quoteZZZ
+ * @date 2025-05-26
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ApiModel(description = "通知公告：发布竞赛相关通知、公告对象 sys_notice")
 public class SysNotice extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
-    /** 公告ID */
-    private Long noticeId;
+    /** 公告ID：自增主键 */
+    @ApiModelProperty(value = "公告ID：自增主键")
+    private Integer noticeId;  // 改为Integer与数据库一致
 
-    /** 公告标题 */
-    private String noticeTitle;
-
-    /** 公告类型（1通知 2公告） */
-    private String noticeType;
-
-    /** 公告内容 */
-    private String noticeContent;
-
-    /** 公告状态（0正常 1关闭） */
-    private String status;
-
-    public Long getNoticeId()
-    {
-        return noticeId;
-    }
-
-    public void setNoticeId(Long noticeId)
-    {
-        this.noticeId = noticeId;
-    }
-
-    public void setNoticeTitle(String noticeTitle)
-    {
-        this.noticeTitle = noticeTitle;
-    }
-
+    /** 公告标题：如"关于XX竞赛的通知" */
+    @Excel(name = "公告标题：如\"关于XX竞赛的通知\"")
+    @ApiModelProperty(value = "公告标题：如\"关于XX竞赛的通知\"")
     @Xss(message = "公告标题不能包含脚本字符")
     @NotBlank(message = "公告标题不能为空")
     @Size(min = 0, max = 50, message = "公告标题不能超过50个字符")
-    public String getNoticeTitle()
-    {
-        return noticeTitle;
-    }
+    private String noticeTitle;
 
-    public void setNoticeType(String noticeType)
-    {
-        this.noticeType = noticeType;
-    }
+    /** 公告类型：1通知(如赛事通知)/2公告(如获奖公示) */
+    @Excel(name = "公告类型：1通知(如赛事通知)/2公告(如获奖公示)")
+    @ApiModelProperty(value = "公告类型：1通知(如赛事通知)/2公告(如获奖公示)")
+    private String noticeType;
 
-    public String getNoticeType()
-    {
-        return noticeType;
-    }
+    /** 公告内容：支持富文本格式 */
+    @Excel(name = "公告内容：支持富文本格式")
+    @ApiModelProperty(value = "公告内容：支持富文本格式")
+    private byte[] noticeContent;  // 改为byte[]以匹配longblob
 
-    public void setNoticeContent(String noticeContent)
-    {
-        this.noticeContent = noticeContent;
-    }
+    /** 公告内容字符串(用于前端展示) */
+    @ApiModelProperty(value = "公告内容字符串(用于前端展示)")
+    private transient String noticeContentString;  // 添加字符串版本用于前端展示
 
-    public String getNoticeContent()
-    {
-        return noticeContent;
-    }
+    /** 公告状态：0正常/1关闭 */
+    @Excel(name = "公告状态：0正常/1关闭")
+    @ApiModelProperty(value = "公告状态：0正常/1关闭")
+    private String status;
 
-    public void setStatus(String status)
-    {
-        this.status = status;
-    }
+    /** 发布用户：关联用户表ID */
+    @Excel(name = "发布用户：关联用户表ID")
+    @ApiModelProperty(value = "发布用户：关联用户表ID")
+    private Long userId;
 
-    public String getStatus()
-    {
-        return status;
-    }
+    /** 发布部门：关联部门表ID */
+    @Excel(name = "发布部门：关联部门表ID")
+    @ApiModelProperty(value = "发布部门：关联部门表ID")
+    private Long deptId;
 
     @Override
     public String toString() {
@@ -93,6 +79,8 @@ public class SysNotice extends BaseEntity
             .append("noticeType", getNoticeType())
             .append("noticeContent", getNoticeContent())
             .append("status", getStatus())
+            .append("userId", getUserId())
+            .append("deptId", getDeptId())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

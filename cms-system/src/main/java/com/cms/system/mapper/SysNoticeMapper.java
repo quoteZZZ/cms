@@ -17,7 +17,7 @@ public interface SysNoticeMapper
      * @param noticeId 公告ID
      * @return 公告信息
      */
-    public SysNotice selectNoticeById(Long noticeId);
+    public SysNotice selectNoticeById(Integer noticeId);
 
     /**
      * 查询公告列表
@@ -49,7 +49,7 @@ public interface SysNoticeMapper
      * @param noticeId 公告ID
      * @return 结果
      */
-    public int deleteNoticeById(Long noticeId);
+    public int deleteNoticeById(Integer noticeId);
 
     /**
      * 批量删除公告信息
@@ -57,5 +57,5 @@ public interface SysNoticeMapper
      * @param noticeIds 需要删除的公告ID
      * @return 结果
      */
-    public int deleteNoticeByIds(Long[] noticeIds);
+    public int deleteNoticeByIds(Integer[] noticeIds);
 }

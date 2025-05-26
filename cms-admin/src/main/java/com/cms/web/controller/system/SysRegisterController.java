@@ -1,15 +1,15 @@
 package com.cms.web.controller.system;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import com.cms.common.core.controller.BaseController;
 import com.cms.common.core.domain.AjaxResult;
 import com.cms.common.core.domain.model.RegisterBody;
 import com.cms.common.utils.StringUtils;
 import com.cms.framework.web.service.SysRegisterService;
 import com.cms.system.service.ISysConfigService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 注册验证表现层：

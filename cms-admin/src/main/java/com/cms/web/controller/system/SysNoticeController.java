@@ -6,12 +6,14 @@ import com.cms.common.core.domain.AjaxResult;
 import com.cms.common.core.page.TableDataInfo;
 import com.cms.common.enums.BusinessType;
 import com.cms.common.core.domain.entity.SysNotice;
+import com.cms.common.utils.SecurityUtils;
 import com.cms.system.service.ISysNoticeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -43,9 +45,21 @@ public class SysNoticeController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:notice:query')")
     @GetMapping(value = "/{noticeId}")
-    public AjaxResult getInfo(@PathVariable Long noticeId)
+    public AjaxResult getInfo(@PathVariable Integer noticeId)
     {
         return success(noticeService.selectNoticeById(noticeId));
+    }
+    
+    /**
+     * 获取竞赛相关公告列表（无需权限验证，供前台使用）
+     */
+    @GetMapping("/competition")
+    public AjaxResult listCompetitionNotices(SysNotice notice)
+    {
+        // 只查询状态为正常的公告
+        notice.setStatus("0");
+        List<SysNotice> list = noticeService.selectNoticeList(notice);
+        return success(list);
     }
 
     /**
@@ -57,6 +71,20 @@ public class SysNoticeController extends BaseController
     public AjaxResult add(@Validated @RequestBody SysNotice notice)
     {
         notice.setCreateBy(getUsername());
+        
+        // 如果提供的是字符串内容，转换为字节数组存储
+        if (notice.getNoticeContentString() != null && !notice.getNoticeContentString().isEmpty()) {
+            notice.setNoticeContent(notice.getNoticeContentString().getBytes(StandardCharsets.UTF_8));
+        }
+        
+        // 设置默认用户和部门ID
+        if (notice.getUserId() == null) {
+            notice.setUserId(SecurityUtils.getUserId());
+        }
+        if (notice.getDeptId() == null) {
+            notice.setDeptId(SecurityUtils.getDeptId());
+        }
+        
         return toAjax(noticeService.insertNotice(notice));
     }
 
@@ -69,6 +97,12 @@ public class SysNoticeController extends BaseController
     public AjaxResult edit(@Validated @RequestBody SysNotice notice)
     {
         notice.setUpdateBy(getUsername());
+        
+        // 如果提供的是字符串内容，转换为字节数组存储
+        if (notice.getNoticeContentString() != null && !notice.getNoticeContentString().isEmpty()) {
+            notice.setNoticeContent(notice.getNoticeContentString().getBytes(StandardCharsets.UTF_8));
+        }
+        
         return toAjax(noticeService.updateNotice(notice));
     }
 
@@ -78,7 +112,7 @@ public class SysNoticeController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:notice:remove')")
     @Log(title = "通知公告", businessType = BusinessType.DELETE)
     @DeleteMapping("/{noticeIds}")
-    public AjaxResult remove(@PathVariable Long[] noticeIds)
+    public AjaxResult remove(@PathVariable Integer[] noticeIds)
     {
         return toAjax(noticeService.deleteNoticeByIds(noticeIds));
     }

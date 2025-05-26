@@ -38,20 +38,21 @@ public interface SysRegistrMapper
     public SysRegistr selectSysRegistrByUserIdAndCompId(@Param("userId") Long userId, @Param("compId") Long compId);
 
     /**
-     * 根据竞赛ID查询参赛者列表
-     *
-     * @param compId 竞赛ID
-     * @return 参赛者列表
-     */
-    public List<SysRegistr> selectSysRegistrListByCompId(Long compId);
-
-    /**
      * 新增报名信息
      * 
      * @param sysRegistr 报名信息
      * @return 结果
      */
     public int insertSysRegistr(SysRegistr sysRegistr);
+
+    // 新增方法注释：根据竞赛ID查询参赛者列表
+    /**
+     * 根据竞赛ID查询参赛者列表
+     * 
+     * @param compId 竞赛ID
+     * @return 参赛者列表
+     */
+    public List<SysRegistr> selectSysRegistrListByCompId(Long compId);
 
     /**
      * 修改报名信息

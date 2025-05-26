@@ -1,5 +1,6 @@
 package com.cms.common.core.domain.entity;
 
+import java.math.BigDecimal;
 import com.cms.common.annotation.Excel;
 import com.cms.common.core.domain.BaseEntity;
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ import io.swagger.annotations.ApiModelProperty;
  * 成绩结果对象 sys_result
  *
  * @author quoteZZZ
- * @date 2025-03-09
+ * @date 2025-05-26
  */
 @Data
 @NoArgsConstructor
@@ -24,62 +25,93 @@ public class SysResult extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 成绩编号
+     * 成绩ID：使用雪花算法生成
      */
-    @Excel(name = "成绩编号")
-    @ApiModelProperty(value = "成绩编号")
+    @Excel(name = "成绩ID：使用雪花算法生成")
+    @ApiModelProperty(value = "成绩ID：使用雪花算法生成")
     private Long resultId;
 
     /**
-     * 竞赛编号
+     * 竞赛ID：所属竞赛编号
      */
-    @Excel(name = "竞赛编号")
-    @ApiModelProperty(value = "竞赛编号")
+    @Excel(name = "竞赛ID：所属竞赛编号")
+    @ApiModelProperty(value = "竞赛ID：所属竞赛编号")
     private Long compId;
 
     /**
-     * 报名编号
+     * 报名ID：对应报名记录编号
      */
-    @Excel(name = "报名编号")
-    @ApiModelProperty(value = "报名编号")
+    @Excel(name = "报名ID：对应报名记录编号")
+    @ApiModelProperty(value = "报名ID：对应报名记录编号")
     private Long registrId;
 
     /**
-     * 用户ID
+     * 参赛者ID：关联用户表ID
      */
-    @ApiModelProperty(value = "用户ID")
+    @Excel(name = "参赛者ID：关联用户表ID")
+    @ApiModelProperty(value = "参赛者ID：关联用户表ID")
     private Long userId;
 
     /**
-     * 组织ID
+     * 部门ID：关联部门表ID
      */
-    @ApiModelProperty(value = "组织ID")
+    @Excel(name = "部门ID：关联部门表ID")
+    @ApiModelProperty(value = "部门ID：关联部门表ID")
     private Long deptId;
 
     /**
-     * 最终得分
+     * 参赛者名称：冗余字段，便于列表展示
      */
-    @Excel(name = "最终得分")
-    @ApiModelProperty(value = "最终得分")
-    private Double finalScore;
+    @Excel(name = "参赛者名称：冗余字段，便于列表展示")
+    @ApiModelProperty(value = "参赛者名称：冗余字段，便于列表展示")
+    private String userName;
 
     /**
-     * 备注信息
+     * 竞赛名称：冗余字段，便于列表展示
      */
-    @Excel(name = "备注信息")
-    @ApiModelProperty(value = "备注信息")
-    private String remark;
+    @Excel(name = "竞赛名称：冗余字段，便于列表展示")
+    @ApiModelProperty(value = "竞赛名称：冗余字段，便于列表展示")
+    private String compName;
 
     /**
-     * 使用状态
+     * 部门名称：冗余字段，便于列表展示
      */
-    @ApiModelProperty(value = "使用状态：0-正常，1-停用")
+    @Excel(name = "部门名称：冗余字段，便于列表展示")
+    @ApiModelProperty(value = "部门名称：冗余字段，便于列表展示")
+    private String deptName;
+
+    /**
+     * 最终得分：参赛作品的综合得分
+     */
+    @Excel(name = "最终得分：参赛作品的综合得分")
+    @ApiModelProperty(value = "最终得分：参赛作品的综合得分")
+    private BigDecimal finalScore;
+
+    /**
+     * 排名：在本竞赛中的名次
+     */
+    @Excel(name = "排名：在本竞赛中的名次")
+    @ApiModelProperty(value = "排名：在本竞赛中的名次")
+    private Long rankNum;
+
+    /**
+     * 获奖等级：如一等奖/二等奖/三等奖
+     */
+    @Excel(name = "获奖等级：如一等奖/二等奖/三等奖")
+    @ApiModelProperty(value = "获奖等级：如一等奖/二等奖/三等奖")
+    private String awardLevel;
+
+    /**
+     * 使用状态：0正常/1停用
+     */
+    @Excel(name = "使用状态：0正常/1停用")
+    @ApiModelProperty(value = "使用状态：0正常/1停用")
     private String status;
 
     /**
-     * 删除标志
+     * 删除标志：0存在/2删除
      */
-    @ApiModelProperty(value = "删除标志：0-存在，2-已删除")
+    @ApiModelProperty(value = "删除标志：0存在/2删除")
     private String delFlag;
 }
 

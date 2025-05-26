@@ -125,60 +125,10 @@ public class SysComp extends BaseEntity {
     @ApiModelProperty(value = "使用状态：0-正常，1-停用，默认值为'0'")
     private Character status; // 注释补充：明确默认值为'0'
 
-    // 新增：强制包含status字段的toString实现
-    @Override
-    public String toString() {
-        return "SysComp{" +
-            "compId=" + compId +
-            ", compName='" + compName + '\'' +
-            ", status=" + status +
-            ", compCategory=" + compCategory +
-            ", compMode=" + compMode +
-            ", compStatus=" + compStatus +
-            '}';
-    }
-
     /**
      * 删除标志：0-存在，2-已删除
      */
     @ApiModelProperty(value = "删除标志：0-存在，2-已删除")
     private Character delFlag;
 
-    /**
-     * 创建者
-     */
-    @Excel(name = "创建者")
-    @ApiModelProperty(value = "创建者")
-    private String createBy;
-
-    /**
-     * 创建时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm")
-    @ApiModelProperty(value = "创建时间")
-    private Date createTime;
-
-    /**
-     * 更新者
-     */
-    @Excel(name = "更新者")
-    @ApiModelProperty(value = "更新者")
-    private String updateBy;
-
-    /**
-     * 更新时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "更新时��", width = 30, dateFormat = "yyyy-MM-dd HH:mm")
-    @ApiModelProperty(value = "更新时间")
-    private Date updateTime;
-
-    public Long getDeptId() {
-        return deptId;
-    }
-
-    public void setDeptId(Long deptId) {
-        this.deptId = deptId;
-    }
 }

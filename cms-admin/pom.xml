@@ -49,11 +49,6 @@
             <artifactId>cms-framework</artifactId>
         </dependency>
 
-        <!-- 代码生成-->
-        <dependency>
-            <groupId>com.cms</groupId>
-            <artifactId>cms-generator</artifactId>
-        </dependency>
 
     </dependencies>
 

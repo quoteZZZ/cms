@@ -2,6 +2,7 @@ package com.cms.system.service.impl;
 
 import com.cms.common.annotation.DataScope;
 import com.cms.common.core.domain.entity.SysNotice;
+import com.cms.common.utils.SecurityUtils;
 import com.cms.system.mapper.SysNoticeMapper;
 import com.cms.system.service.ISysNoticeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ public class SysNoticeServiceImpl implements ISysNoticeService
      * @return 公告信息
      */
     @Override
-    public SysNotice selectNoticeById(Long noticeId)
+    public SysNotice selectNoticeById(Integer noticeId)
     {
         return noticeMapper.selectNoticeById(noticeId);
     }
@@ -54,6 +55,13 @@ public class SysNoticeServiceImpl implements ISysNoticeService
     @Override
     public int insertNotice(SysNotice notice)
     {
+        // 如果没有设置用户ID和部门ID，则自动设置为当前登录用户的ID和部门ID
+        if (notice.getUserId() == null) {
+            notice.setUserId(SecurityUtils.getUserId());
+        }
+        if (notice.getDeptId() == null) {
+            notice.setDeptId(SecurityUtils.getDeptId());
+        }
         return noticeMapper.insertNotice(notice);
     }
 
@@ -76,7 +84,7 @@ public class SysNoticeServiceImpl implements ISysNoticeService
      * @return 结果
      */
     @Override
-    public int deleteNoticeById(Long noticeId)
+    public int deleteNoticeById(Integer noticeId)
     {
         return noticeMapper.deleteNoticeById(noticeId);
     }
@@ -88,7 +96,7 @@ public class SysNoticeServiceImpl implements ISysNoticeService
      * @return 结果
      */
     @Override
-    public int deleteNoticeByIds(Long[] noticeIds)
+    public int deleteNoticeByIds(Integer[] noticeIds)
     {
         return noticeMapper.deleteNoticeByIds(noticeIds);
     }

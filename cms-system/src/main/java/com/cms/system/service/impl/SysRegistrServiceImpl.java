@@ -95,14 +95,26 @@ public class SysRegistrServiceImpl implements ISysRegistrService
 
             // 根据参数的用户编码，获得用户名称和创建者
             SysUser sysUser = validateAndGetSysUser(sysRegistr.getUserId());
-
             sysRegistr.setCreateBy(sysUser.getUserName());
             sysRegistr.setUserName(sysUser.getUserName());//设置用户名称
+            
+            // 设置部门ID（如果存在）
+            if (sysUser.getDeptId() != null) {
+                sysRegistr.setDeptId(sysUser.getDeptId());
+            }
+
             sysRegistr.setCreateTime(DateUtils.getNowDate());
 
-            //评分频率默认为0
-            sysRegistr.setScoreCount(0L); // 初始化评分频率为0
-
+            // 初始化状态字段
+            if (sysRegistr.getStatus() == null) {
+                sysRegistr.setStatus("0"); // 默认状态：正常
+            }
+            if (sysRegistr.getDelFlag() == null) {
+                sysRegistr.setDelFlag("0"); // 默认删除标志：存在
+            }
+            // 评分频率默认为0
+            sysRegistr.setScoreCount(0); // 初始化评分频率为0
+            
             // 插入报名信息，并返回受影响的行数
             int rows = sysRegistrMapper.insertSysRegistr(sysRegistr);
 
@@ -228,4 +240,10 @@ public class SysRegistrServiceImpl implements ISysRegistrService
         return sysRegistrMapper.selectSysRegistrByUserIdAndCompId(userId, compId);
     }
 
+    // 新增方法：根据竞赛ID查询参赛者列表
+    @Override
+    public List<SysRegistr> selectSysRegistrListByCompId(Long compId) {
+        logger.info("根据竞赛ID查询参赛者列表, compId: {}", compId);
+        return sysRegistrMapper.selectSysRegistrListByCompId(compId);
+    }
 }
