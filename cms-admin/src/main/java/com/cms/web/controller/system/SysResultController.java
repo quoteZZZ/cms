@@ -88,7 +88,7 @@ public R<SysResult> getInfo(
 @PreAuthorize("@ss.hasPermi('system:result:add')")
 @Log(title = "成绩结果", businessType = BusinessType.INSERT)
 @PostMapping
-public R<Integer> add(
+public R<String> add(
         @ApiParam(value = "新增成绩结果数据", required = true)
         @RequestBody SysResult sysResult) {
     if (sysResult == null) {
@@ -108,7 +108,7 @@ public R<Integer> add(
 @PreAuthorize("@ss.hasPermi('system:result:edit')")
 @Log(title = "成绩结果", businessType = BusinessType.UPDATE)
 @PutMapping
-public R<Integer> edit(
+public R<String> edit(
         @ApiParam(value = "修改成绩结果数据", required = true)
         @RequestBody SysResult sysResult) {
     if (sysResult == null || sysResult.getResultId() == null) {
@@ -128,7 +128,7 @@ public R<Integer> edit(
 @PreAuthorize("@ss.hasPermi('system:result:remove')")
 @Log(title = "成绩结果", businessType = BusinessType.DELETE)
 @DeleteMapping("/{resultIds}")
-public R<Integer> remove(
+public R<String> remove(
         @ApiParam(value = "成绩结果主键集合", required = true)
         @PathVariable Long[] resultIds) {
     if (resultIds == null || resultIds.length == 0) {

@@ -38,7 +38,20 @@ public class SecurityUtils
         }
     }
 
-
+    /**
+     * 获取用户部门ID
+     **/
+    public static Long getDeptId()
+    {
+        try
+        {
+            return getLoginUser().getDeptId();
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("获取用户部门ID异常", HttpStatus.UNAUTHORIZED);
+        }
+    }
 
     /**
      * 获取用户账户

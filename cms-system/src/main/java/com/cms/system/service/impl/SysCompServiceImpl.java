@@ -29,6 +29,8 @@ import com.cms.system.service.ISysDeptService;
 import com.cms.common.core.domain.entity.SysDept;
 import com.cms.system.mapper.SysRoleDeptMapper;
 import com.cms.common.core.domain.entity.SysRoleDept;
+import com.cms.system.service.ISysUserService;
+import com.cms.common.core.domain.entity.SysUser;
 
 /**
  * 竞赛信息Service业务层处理
@@ -56,6 +58,9 @@ public class SysCompServiceImpl implements ISysCompService {
 
     @Resource
     private SysRoleDeptMapper roleDeptMapper; // 注入SysRoleDeptMapper
+
+    @Resource
+    private ISysUserService sysUserService; // 注入ISysUserService
 
     // 定义日志记录器
     Logger logger = LoggerFactory.getLogger(SysCompServiceImpl.class);
@@ -465,16 +470,28 @@ public class SysCompServiceImpl implements ISysCompService {
      * 功能描述：
      * 1. 设置创建时间
      * 2. 批量插入用户竞赛关联信息
+     * 3. 更新用户的部门ID为竞赛关联的部门ID
      *
      * @param compId 竞赛ID
-     * @param userIds 需要���权的用户数据ID
+     * @param userIds 需要授权的用户数据ID
      * @return 插入结果
      * @throws ServiceException 如果 compId 或 userIds 为 null 或插入失败
      */
     @Override
+    @Transactional
     public int insertAuthUsers(Long compId, Long[] userIds) {
         if (compId == null || userIds == null || userIds.length == 0) {
             throw new ServiceException("竞赛ID和用户ID列表不能为空", 400);
+        }
+
+        SysComp sysComp = selectSysCompByCompId(compId); // Fetch the competition details
+        Long competitionDeptId = null;
+        if (sysComp != null && sysComp.getDeptId() != null) {
+            competitionDeptId = sysComp.getDeptId();
+        } else {
+            logger.warn("竞赛 {} 不存在或没有关联的部门ID，将无法更新用户部门。", compId);
+            // Depending on requirements, you might throw an error or proceed without dept update.
+            // For now, we'll log a warning and proceed with association.
         }
 
         List<SysUserComp> list = new ArrayList<>();
@@ -483,8 +500,25 @@ public class SysCompServiceImpl implements ISysCompService {
             ur.setUserId(userId);
             ur.setCompId(compId);
             list.add(ur);
-        }
 
+            // If the competition has an associated department, update the user's department.
+            // This assumes users being assigned here are judges or relevant personnel
+            // whose data access should be scoped to this competition's department.
+            if (competitionDeptId != null) {
+                SysUser user = sysUserService.selectUserById(userId);
+                if (user != null) {
+                    if (user.getDeptId() == null || !user.getDeptId().equals(competitionDeptId)) {
+                        logger.info("为竞赛 {} 分配用户 {} 时，将其部门从 {} 更新为竞赛部门 {}",
+                                    compId, user.getUserId(), user.getDeptId(), competitionDeptId);
+                        user.setDeptId(competitionDeptId);
+                        sysUserService.updateUser(user); // Persist the change to SysUser
+                    }
+                } else {
+                    logger.warn("为竞赛 {} 分配用户时，未找到用户ID {}，跳过部门更新。", compId, userId);
+                }
+            }
+        }
+        // Batch insert User-Competition association
         return userCompMapper.batchUserComp(list);
     }
 

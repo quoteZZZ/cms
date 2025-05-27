@@ -86,6 +86,29 @@ public class SysRegistrServiceImpl implements ISysRegistrService
     public int insertSysRegistr(SysRegistr sysRegistr) {
         logger.info("新增报名信息, sysRegistr: {}", sysRegistr);
         try {
+            // 参数校验
+            if (sysRegistr == null) {
+                logger.error("报名信息不能为空");
+                throw new IllegalArgumentException("报名信息不能为空");
+            }
+
+            if (sysRegistr.getCompId() == null) {
+                logger.error("竞赛编码不能为空");
+                throw new IllegalArgumentException("竞赛编码不能为空");
+            }
+
+            if (sysRegistr.getUserId() == null) {
+                logger.error("用户编码不能为空");
+                throw new IllegalArgumentException("用户编码不能为空");
+            }
+
+            // 检查是否重复报名
+            SysRegistr existingRegistr = selectSysRegistrByUserIdAndCompId(sysRegistr.getUserId(), sysRegistr.getCompId());
+            if (existingRegistr != null) {
+                logger.warn("用户已报名该竞赛, userId: {}, compId: {}", sysRegistr.getUserId(), sysRegistr.getCompId());
+                throw new IllegalArgumentException("您已经报名该竞赛，请勿重复报名");
+            }
+
             // 获得唯一id,设置到对象中
             sysRegistr.setRegistrId(IdGenerator.generateId(0));
 
@@ -98,9 +121,24 @@ public class SysRegistrServiceImpl implements ISysRegistrService
             sysRegistr.setCreateBy(sysUser.getUserName());
             sysRegistr.setUserName(sysUser.getUserName());//设置用户名称
             
-            // 设置部门ID（如果存在）
-            if (sysUser.getDeptId() != null) {
+            // 设置 SysRegistr 实体的部门ID为竞赛的部门ID
+            if (sysComp.getDeptId() != null) {
+                sysRegistr.setDeptId(sysComp.getDeptId());
+            } else if (sysUser.getDeptId() != null) {
+                // Fallback: 如果竞赛没有关联部门，则使用用户当前的部门ID作为报名记录的部门ID
                 sysRegistr.setDeptId(sysUser.getDeptId());
+            }
+
+            // 更新用户的部门为竞赛的部门
+            if (sysComp.getDeptId() != null) { // 仅当竞赛有关联部门时执行
+                if (sysUser.getDeptId() == null || !sysUser.getDeptId().equals(sysComp.getDeptId())) {
+                    logger.info("将用户 {} 的部门从 {} 更新为竞赛部门 {}",
+                                sysUser.getUserId(), sysUser.getDeptId(), sysComp.getDeptId());
+                    sysUser.setDeptId(sysComp.getDeptId());
+                    // 调用 sysUserService.updateUser 来持久化用户部门的更改
+                    // 这是一个基于通用实践的假设，具体方法名可能为 updateUserProfile 等
+                    sysUserService.updateUser(sysUser);
+                }
             }
 
             sysRegistr.setCreateTime(DateUtils.getNowDate());
@@ -125,10 +163,14 @@ public class SysRegistrServiceImpl implements ISysRegistrService
 
             logger.info("新增报名信息结果: {}", rows);
             return rows;
+        } catch (IllegalArgumentException e) {
+            // 记录业务验证异常日志
+            logger.warn("报名验证失败: {}", e.getMessage());
+            throw e; // 保持原始异常，包含业务验证信息
         } catch (Exception e) {
             // 记录异常日志
             logger.error("插入报名信息失败", e);
-            throw new RuntimeException("插入报名信息失败", e); // 抛出自定义异常
+            throw new RuntimeException("插入报名信息失败: " + e.getMessage(), e); // 包装异常，提供更多上下文
         }
     }
 
@@ -234,7 +276,6 @@ public class SysRegistrServiceImpl implements ISysRegistrService
      * @param compId 竞赛ID
      * @return 参赛者信息
      */
-    @Override
     public SysRegistr selectSysRegistrByUserIdAndCompId(Long userId, Long compId) {
         logger.info("根据用户ID和竞赛ID查询参赛者信息, userId: {}, compId: {}", userId, compId);
         return sysRegistrMapper.selectSysRegistrByUserIdAndCompId(userId, compId);

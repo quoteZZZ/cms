@@ -59,5 +59,15 @@ public interface ISysRegistrService
      */
     public int deleteSysRegistrByRegistrId(Long registrId);
 
+    /**
+     * 根据用户ID和竞赛ID查询参赛者信息
+     * 
+     * @param userId 用户ID
+     * @param compId 竞赛ID
+     * @return 参赛者信息
+     */
     SysRegistr selectSysRegistrByUserIdAndCompId(Long userId, Long compId);
+
+    // 新增方法：根据竞赛ID查询参赛者列表
+    List<SysRegistr> selectSysRegistrListByCompId(Long compId);
 }

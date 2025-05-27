@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.Date;
+
 /**
  * 评分信息对象 sys_score
  *
@@ -65,6 +67,27 @@ public class SysScore extends BaseEntity {
     private String judgeName;
 
     /**
+     * 参赛者名称
+     */
+    @Excel(name = "参赛者名称")
+    @ApiModelProperty(value = "参赛者名称")
+    private String userName;
+
+    /**
+     * 竞赛名称
+     */
+    @Excel(name = "竞赛名称")
+    @ApiModelProperty(value = "竞赛名称")
+    private String compName;
+
+    /**
+     * 评分时间
+     */
+    @Excel(name = "评分时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    @ApiModelProperty(value = "评分时间")
+    private Date scoreTime;
+
+    /**
      * 评语
      */
     @Excel(name = "评语")
@@ -74,7 +97,7 @@ public class SysScore extends BaseEntity {
     /**
      * 使用状态：0-正常，1-停用
      */
-    @Excel(name = "使用状态",readConverterExp = "0=正常,1=停用")
+    @Excel(name = "使用状态", readConverterExp = "0=正常,1=停用")
     @ApiModelProperty(value = "使用状态：0-正常，1-停用")
     private String status;
 
@@ -85,13 +108,9 @@ public class SysScore extends BaseEntity {
     private String delFlag;
 
     /**
-     * 竞赛编号
-     */
-    private Long compId;
-
-    /**
      * 用户ID
      */
+    @ApiModelProperty(value = "参赛者ID")
     private Long userId;
 
     /**
@@ -99,36 +118,4 @@ public class SysScore extends BaseEntity {
      */
     @ApiModelProperty(value = "组织ID")
     private Long deptId;
-
-    public Long getCompId() {
-        return compId;
-    }
-
-    public void setCompId(Long compId) {
-        this.compId = compId;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public Long getResultId() {
-        return resultId;
-    }
-
-    public void setResultId(Long resultId) {
-        this.resultId = resultId;
-    }
-
-    public Long getDeptId() {
-        return deptId;
-    }
-
-    public void setDeptId(Long deptId) {
-        this.deptId = deptId;
-    }
 }

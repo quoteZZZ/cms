@@ -1,5 +1,7 @@
 package com.cms.system.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -128,7 +130,7 @@ public class SysResultServiceImpl implements ISysResultService
             Thread.currentThread().interrupt();
             logger.error("获取成绩结果分布式锁被中断, resultId: {}", resultId, e);
         } catch (Exception e) {
-            logger.error("查询成绩��果异常, resultId: {}", resultId, e);
+            logger.error("查询成绩结果异常, resultId: {}", resultId, e);
         }
 
         return result;
@@ -201,7 +203,7 @@ public class SysResultServiceImpl implements ISysResultService
     @Override
     @Transactional
     public int insertSysResult(SysResult sysResult) {
-        logger.info("新增成���结果, sysResult: {}", sysResult);
+        logger.info("新增成绩结果, sysResult: {}", sysResult);
         try {
             // 参数校验
             if (sysResult == null) {
@@ -223,7 +225,7 @@ public class SysResultServiceImpl implements ISysResultService
             }
 
             sysResult.setCreateTime(DateUtils.getNowDate());
-            sysResult.setFinalScore(Math.round(sysResult.getFinalScore() * 100.0) / 100.0);
+            sysResult.setFinalScore(sysResult.getFinalScore().multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP));
 
             // 使用分布式锁确保操作原子性
             String lockKey = SCORE_CALC_LOCK_PREFIX + "registr:" + sysResult.getRegistrId();
@@ -303,7 +305,7 @@ public class SysResultServiceImpl implements ISysResultService
         logger.info("开始处理报名数据");
 
         try {
-            // 查询所有竞��
+            // 查询所有竞赛
             List<SysComp> competitions = sysCompMapper.selectSysCompList(new SysComp(), null);
             if (competitions == null || competitions.isEmpty()) {
                 logger.warn("没有找到任何竞赛数据");
@@ -404,7 +406,7 @@ public class SysResultServiceImpl implements ISysResultService
         double finalScore = Math.round((totalScore / validScoreCount) * 100.0) / 100.0;
         logger.info("参赛者ID={}, 计算得到的平均分={}", registrId, finalScore);
 
-        // 使用��布式锁更新成绩
+        // 使用分布式锁更新成绩
         String lockKey = SCORE_CALC_LOCK_PREFIX + "registr:" + registrId;
         try {
             redissonLockUtil.executeWithLock(lockKey, () -> {
@@ -437,7 +439,7 @@ public class SysResultServiceImpl implements ISysResultService
                 newResult.setCompId(compId);
                 newResult.setRegistrId(registrId);
                 newResult.setUserId(userId);
-                newResult.setFinalScore(finalScore);
+                newResult.setFinalScore(BigDecimal.valueOf(finalScore).setScale(2, RoundingMode.HALF_UP));
                 newResult.setCreateTime(DateUtils.getNowDate());
                 newResult.setUpdateTime(DateUtils.getNowDate());
                 newResult.setStatus("0");
@@ -451,7 +453,7 @@ public class SysResultServiceImpl implements ISysResultService
                         newResult, CACHE_EXPIRE_TIME, TimeUnit.MINUTES);
             } else {
                 // 更新已存在的成绩记录
-                existingResult.setFinalScore(finalScore);
+                existingResult.setFinalScore(BigDecimal.valueOf(finalScore).setScale(2, RoundingMode.HALF_UP));
                 existingResult.setUpdateTime(DateUtils.getNowDate());
 
                 sysResultMapper.updateSysResult(existingResult);
@@ -483,7 +485,10 @@ public class SysResultServiceImpl implements ISysResultService
             }
 
             sysResult.setUpdateTime(DateUtils.getNowDate());
-            sysResult.setFinalScore(Math.round(sysResult.getFinalScore() * 100.0) / 100.0);
+            // 确保 finalScore 以两位小数精度存储
+            if (sysResult.getFinalScore() != null) {
+                sysResult.setFinalScore(sysResult.getFinalScore().setScale(2, RoundingMode.HALF_UP));
+            }
 
             String lockKey = SCORE_CALC_LOCK_PREFIX + "result:" + sysResult.getResultId();
             String cacheKey = RESULT_CACHE_PREFIX + sysResult.getResultId();
@@ -567,5 +572,45 @@ public class SysResultServiceImpl implements ISysResultService
             logger.error("删除成绩结果信息失败, resultId: {}", resultId, e);
             throw new ServiceException("删除成绩结果信息失败", 500, e.getMessage());
         }
+    }
+
+    // 添加@SafeVarargs注解
+    @SafeVarargs
+    public final BigDecimal calculateWeightedAverage(List<Map.Entry<BigDecimal, Double>>... scoreWeights) {
+        BigDecimal totalWeightedScore = BigDecimal.ZERO;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        
+        for (List<Map.Entry<BigDecimal, Double>> scoreWeightList : scoreWeights) {
+            if (scoreWeightList == null) {
+                continue; // 防止空列表导致NPE
+            }
+            for (Map.Entry<BigDecimal, Double> entry : scoreWeightList) {
+                if (entry == null || entry.getKey() == null) {
+                    continue; // 跳过空条目
+                }
+                BigDecimal score = entry.getKey();
+                // 修改: 确保 entry.getValue() 不为 null 并转换为 BigDecimal
+                Double weightValue = entry.getValue();
+                BigDecimal weight = (weightValue != null) ? BigDecimal.valueOf(weightValue) : BigDecimal.ZERO;
+                
+                totalWeightedScore = totalWeightedScore.add(score.multiply(weight));
+                totalWeight = totalWeight.add(weight);
+            }
+        }
+        
+        // 避免除零错误
+        if (totalWeight.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        return totalWeightedScore.divide(totalWeight, 2, RoundingMode.HALF_UP);
+    }
+
+    private void someMethod() { // 假设错误发生在某个方法内部
+        // 示例代码
+        BigDecimal aBigDecimal = new BigDecimal("10.5"); // 示例值
+        double aDouble = 2.5; // 示例值
+        BigDecimal result = aBigDecimal.multiply(BigDecimal.valueOf(aDouble));
+        // 示例代码结束
     }
 }
