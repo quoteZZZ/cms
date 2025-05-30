@@ -1,4 +1,4 @@
-package com.cms.web.controller.system;
+package com.cms.web.controller.common;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

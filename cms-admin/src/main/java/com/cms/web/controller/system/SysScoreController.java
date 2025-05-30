@@ -1,6 +1,8 @@
 package com.cms.web.controller.system;
 
 import java.util.List;
+import java.util.Date;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,16 +13,24 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.cms.common.annotation.Log;
 import com.cms.common.core.controller.BaseController;
 import com.cms.common.enums.BusinessType;
 import com.cms.common.core.domain.entity.SysScore;
+import com.cms.common.core.domain.entity.SysUser;
+import com.cms.common.core.domain.entity.SysRegistr;
 import com.cms.system.service.ISysScoreService;
+import com.cms.system.service.ISysRegistrService;
 import com.cms.common.utils.excel.ExcelUtil;
+import com.cms.framework.web.service.TokenService;
+import com.cms.common.utils.ServletUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.cms.common.core.domain.R;
 
 /**
@@ -37,12 +47,20 @@ public class SysScoreController extends BaseController {
     @Autowired
     private ISysScoreService sysScoreService;
 
-/**
- * 查询评分信息列表
- */
-@ApiOperation("查询评分信息列表")
-@PreAuthorize("@ss.hasPermi('system:score:list')")
-@GetMapping("/list")
+    @Autowired
+    private ISysRegistrService sysRegistrService;
+
+    @Autowired
+    private TokenService tokenService;
+
+    private static final Logger log = LoggerFactory.getLogger(SysScoreController.class);
+
+    /**
+     * 查询评分信息列表
+     */
+    @ApiOperation("查询评分信息列表")
+    @PreAuthorize("@ss.hasPermi('system:score:list')")
+    @GetMapping("/list")
     public R<List<SysScore>> list(
             @ApiParam(value = "评分信息查询条件") SysScore sysScore) {
         startPage();
@@ -115,6 +133,7 @@ public class SysScoreController extends BaseController {
             @PathVariable Long[] scoreIds) {
         return R.ok(sysScoreService.deleteSysScoreByScoreIds(scoreIds));
     }
+
+
+
 }
-
-

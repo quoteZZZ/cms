@@ -177,8 +177,8 @@ public class SysUserServiceImpl implements ISysUserService
             return StringUtils.EMPTY; // 返回空字符串而不是 null
         }
         return list.stream()
-               .map(SysRole::getRoleName)
-               .collect(Collectors.joining(","));
+                .map(SysRole::getRoleName)
+                .collect(Collectors.joining(","));
     }
 
     /**
@@ -198,8 +198,8 @@ public class SysUserServiceImpl implements ISysUserService
             return StringUtils.EMPTY; // 返回空字符串而不是 null
         }
         return list.stream()
-               .map(SysPost::getPostName)
-               .collect(Collectors.joining(","));
+                .map(SysPost::getPostName)
+                .collect(Collectors.joining(","));
     }
 
     /**

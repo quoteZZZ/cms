@@ -103,4 +103,20 @@ public interface ISysCompService {
      */
     public List<SysComp> recommendCompetitions(String type, Character category, int count);
 
+    /**
+     * 查询已分配给指定用户的竞赛列表
+     *
+     * @param userId 用户ID
+     * @return 竞赛信息集合
+     */
+    public List<SysComp> selectMyAssignedCompetitions(Long userId);
+
+    /**
+     * 查询未分配给指定用户的竞赛列表
+     *
+     * @param userId 用户ID
+     * @return 竞赛信息集合
+     */
+    public List<SysComp> selectUnassignedCompetitions(Long userId);
 }
+

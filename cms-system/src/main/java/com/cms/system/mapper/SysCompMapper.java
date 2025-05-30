@@ -66,4 +66,21 @@ public interface SysCompMapper {
      */
     List<Long> selectHotCompIds();
 
+    /**
+     * 查询已分配给指定用户的竞赛列表
+     *
+     * @param userId 用户ID
+     * @return 竞赛信息集合
+     */
+    List<SysComp> selectMyAssignedCompetitions(Long userId);
+
+    /**
+     * 查询未分配给指定用户的竞赛列表
+     *
+     * @param userId 用户ID
+     * @return 竞赛信息集合
+     */
+    List<SysComp> selectUnassignedCompetitions(Long userId);
+
 }
+

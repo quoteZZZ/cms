@@ -14,6 +14,8 @@
 		<result property="os"            column="os"                />
 		<result property="msg"           column="msg"               />
 		<result property="loginTime"     column="login_time"        />
+		<result property="userId"        column="user_id"           />
+		<result property="deptId"        column="dept_id"           />
 	</resultMap>
 
 	<insert id="insertLogininfor" parameterType="SysLogininfor">
@@ -22,10 +24,8 @@
 	</insert>
 
 	<select id="selectLogininforList" parameterType="SysLogininfor" resultMap="SysLogininforResult">
-		select l.info_id, l.user_name, l.ipaddr, l.login_location, l.browser, l.os, l.status, l.msg, l.login_time , u.user_id, d.dept_id
+		select l.info_id, l.user_name, l.ipaddr, l.login_location, l.browser, l.os, l.status, l.msg, l.login_time
 		from sys_logininfor l
-		left join  sys_dept d on l.dept_id = d.dept_id
-		left join  sys_user u on l.user_id = u.user_id
 		<where>
 			<if test="ipaddr != null and ipaddr != ''">
 				AND ipaddr like concat('%', #{ipaddr}, '%')

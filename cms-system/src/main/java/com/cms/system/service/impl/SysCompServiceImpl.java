@@ -31,6 +31,7 @@ import com.cms.system.mapper.SysRoleDeptMapper;
 import com.cms.common.core.domain.entity.SysRoleDept;
 import com.cms.system.service.ISysUserService;
 import com.cms.common.core.domain.entity.SysUser;
+import com.cms.system.service.ISysUserCompService;
 
 /**
  * 竞赛信息Service业务层处理
@@ -62,6 +63,9 @@ public class SysCompServiceImpl implements ISysCompService {
     @Resource
     private ISysUserService sysUserService; // 注入ISysUserService
 
+    @Resource
+    private ISysUserCompService userCompService; // 注入ISysUserCompService
+
     // 定义日志记录器
     Logger logger = LoggerFactory.getLogger(SysCompServiceImpl.class);
 
@@ -91,7 +95,7 @@ public class SysCompServiceImpl implements ISysCompService {
                         if (sysComp != null && sysComp.getCompId() != null) {
                             int ttl = CacheConstants.DEFAULT_CACHE_TTL + new Random().nextInt(300);
                             redisCacheUtil.setCacheObject(cacheKey, sysComp, ttl, TimeUnit.SECONDS);
-                            validCompIds.add(compId); // 记���有效compId
+                            validCompIds.add(compId); // 记录有效compId
                         } else {
                             logger.warn("竞赛信息为空或已失效，compId: {}，将从热门列表移除", compId);
                             // 删除无效compId
@@ -350,6 +354,7 @@ public class SysCompServiceImpl implements ISysCompService {
         }
     }
 
+    // ========== 删除相关方法 ==========
     /**
      * 删除竞赛信息
      *
@@ -359,6 +364,7 @@ public class SysCompServiceImpl implements ISysCompService {
      * 3. 逻辑删除关联的部门
      * 4. 删除角色与该部门的关联
      * 5. 清理相关缓存
+     * 6. 清理用户与竞赛关联
      *
      * @param compId 竞赛信息主键，不能为空
      * @return 删除结果
@@ -382,6 +388,9 @@ public class SysCompServiceImpl implements ISysCompService {
                 return 0; // 或者根据实际情况返回
             }
             Long deptId = sysComp.getDeptId();
+
+            // 清理用户与竞赛关联
+            userCompService.deleteCompetitionUsers(compId);
 
             // 1. 执行数据库删除操作 (逻辑删除竞赛)
             int result = sysCompMapper.deleteSysCompByCompId(compId);
@@ -409,6 +418,7 @@ public class SysCompServiceImpl implements ISysCompService {
      *
      * 功能描述：
      * 1. 提取缓存清理为独立方法
+     * 2. 清理用户与竞赛关联
      *
      * @param compIds 竞赛ID列表，不能为空
      * @return 删除结果
@@ -421,16 +431,24 @@ public class SysCompServiceImpl implements ISysCompService {
             throw new ServiceException("竞赛ID列表不能为空", 400);  // 参数校验
         }
 
-        // 1. 执行数据库删除操作
-        int result = sysCompMapper.deleteSysCompByCompIds(compIds);
-        
-        // 2. 批量清理每个竞赛的缓存
-        for (Long compId : compIds) clearCompCache(compId);
-        
-        return result;
+        try {
+            // 清理用户与竞赛关联
+            for (Long compId : compIds) {
+                userCompService.deleteCompetitionUsers(compId);
+            }
+
+            // 1. 执行数据库删除操作
+            int result = sysCompMapper.deleteSysCompByCompIds(compIds);
+
+            // 2. 批量清理每个竞赛的缓存
+            for (Long compId : compIds) clearCompCache(compId);
+
+            return result;
+        } catch (Exception e) {
+            logger.error("批量删除竞赛信息失败", e);
+            throw new ServiceException("批量删除竞赛信息失败", 500, e.getMessage());
+        }
     }
-
-
 
     // ========== 用户授权相关方法 ==========
     /**
@@ -438,14 +456,43 @@ public class SysCompServiceImpl implements ISysCompService {
      *
      * 功能描述：
      * 1. 删除用户竞赛关联信息
+     * 2. 根据情况重置用户部门
      *
      * @param userComp 用户和竞赛关联信息
      * @return 删除结果
      */
     @Override
+    @Transactional
     public int deleteAuthUser(SysUserComp userComp) {
-        // 删除用户竞赛关联信息
-        return userCompMapper.deleteUserCompInfo(userComp);
+        if (userComp == null || userComp.getUserId() == null || userComp.getCompId() == null) {
+            throw new ServiceException("用户竞赛关联信息不完整", 400);
+        }
+
+        try {
+            // 获取竞赛信息，确认部门ID
+            SysComp sysComp = selectSysCompByCompId(userComp.getCompId());
+            if (sysComp != null && sysComp.getDeptId() != null) {
+                // 获取用户信息
+                SysUser user = sysUserService.selectUserById(userComp.getUserId());
+                if (user != null && user.getDeptId() != null &&
+                    user.getDeptId().equals(sysComp.getDeptId())) {
+
+                    logger.info("用户 {} 从竞赛 {} 取消授权，当前用户部门为竞赛部门 {}，将重置用户部门",
+                         userComp.getUserId(), userComp.getCompId(), user.getDeptId());
+
+                    // 重置用户部门为默认部门或其他适当部门（这里以系统默认部门ID 100为例）
+                    // 实际应用中，可能需要根据业务逻辑选择一个合适的部门
+                    user.setDeptId(100L); // 系统默认部门，根据实际情况修改
+                    sysUserService.updateUser(user);
+                }
+            }
+
+            // 删除用户竞赛关联信息
+            return userCompMapper.deleteUserCompInfo(userComp);
+        } catch (Exception e) {
+            logger.error("取消授权用户竞赛失败", e);
+            throw new ServiceException("取消授权用户竞赛失败", 500, e.getMessage());
+        }
     }
 
     /**
@@ -453,15 +500,47 @@ public class SysCompServiceImpl implements ISysCompService {
      *
      * 功能描述：
      * 1. 批量删除用户竞赛关联信息
+     * 2. 根据情况重置用户部门
      *
      * @param compId 竞赛ID
      * @param userIds 需要取消授权的用户数据ID
      * @return 删除结果
      */
     @Override
+    @Transactional
     public int deleteAuthUsers(Long compId, Long[] userIds) {
-        // 批量删除用户竞赛关联信息
-        return userCompMapper.deleteUserCompInfos(compId, userIds);
+        if (compId == null || userIds == null || userIds.length == 0) {
+            throw new ServiceException("竞赛ID或用户ID列表不能为空", 400);
+        }
+
+        try {
+            // 获取竞赛信息，确认部门ID
+            SysComp sysComp = selectSysCompByCompId(compId);
+            if (sysComp != null && sysComp.getDeptId() != null) {
+                Long deptId = sysComp.getDeptId();
+
+                // 处理每个用户的部门关系
+                for (Long userId : userIds) {
+                    SysUser user = sysUserService.selectUserById(userId);
+                    if (user != null && user.getDeptId() != null &&
+                        user.getDeptId().equals(deptId)) {
+
+                        logger.info("用户 {} 从竞赛 {} 批量取消授权，当前用户部门为竞赛部门 {}，将重置用户部门",
+                             userId, compId, user.getDeptId());
+
+                        // 重置用户部门为默认部门或其他适当部门
+                        user.setDeptId(100L); // 系统默认部门，根据实际情况修改
+                        sysUserService.updateUser(user);
+                    }
+                }
+            }
+
+            // 批量删除用户竞赛关联信息
+            return userCompMapper.deleteUserCompInfos(compId, userIds);
+        } catch (Exception e) {
+            logger.error("批量取消授权用户竞赛失败", e);
+            throw new ServiceException("批量取消授权用户竞赛失败", 500, e.getMessage());
+        }
     }
 
     /**
@@ -484,41 +563,61 @@ public class SysCompServiceImpl implements ISysCompService {
             throw new ServiceException("竞赛ID和用户ID列表不能为空", 400);
         }
 
-        SysComp sysComp = selectSysCompByCompId(compId); // Fetch the competition details
+        // 获取竞赛详情，含部门ID
+        SysComp sysComp = selectSysCompByCompId(compId);
         Long competitionDeptId = null;
+
         if (sysComp != null && sysComp.getDeptId() != null) {
             competitionDeptId = sysComp.getDeptId();
         } else {
             logger.warn("竞赛 {} 不存在或没有关联的部门ID，将无法更新用户部门。", compId);
-            // Depending on requirements, you might throw an error or proceed without dept update.
-            // For now, we'll log a warning and proceed with association.
+            // 根据业务需求可以决定是否抛出异常或继续处理
         }
 
         List<SysUserComp> list = new ArrayList<>();
-        for (Long userId : userIds) {
-            SysUserComp ur = new SysUserComp();
-            ur.setUserId(userId);
-            ur.setCompId(compId);
-            list.add(ur);
+        int successCount = 0;
+        int failCount = 0;
 
-            // If the competition has an associated department, update the user's department.
-            // This assumes users being assigned here are judges or relevant personnel
-            // whose data access should be scoped to this competition's department.
-            if (competitionDeptId != null) {
-                SysUser user = sysUserService.selectUserById(userId);
-                if (user != null) {
-                    if (user.getDeptId() == null || !user.getDeptId().equals(competitionDeptId)) {
-                        logger.info("为竞赛 {} 分配用户 {} 时，将其部门从 {} 更新为竞赛部门 {}",
-                                    compId, user.getUserId(), user.getDeptId(), competitionDeptId);
-                        user.setDeptId(competitionDeptId);
-                        sysUserService.updateUser(user); // Persist the change to SysUser
+        for (Long userId : userIds) {
+            try {
+                // 创建用户-竞赛关联
+                SysUserComp ur = new SysUserComp();
+                ur.setUserId(userId);
+                ur.setCompId(compId);
+                list.add(ur);
+
+                // 如果竞赛有关联部门，则更新用户部门
+                if (competitionDeptId != null) {
+                    SysUser user = sysUserService.selectUserById(userId);
+                    if (user != null) {
+                        Long oldDeptId = user.getDeptId();
+                        if (oldDeptId == null || !oldDeptId.equals(competitionDeptId)) {
+                            logger.info("为竞赛 {} 分配用户 {} 时，将其部门从 {} 更新为竞赛部门 {}",
+                                    compId, user.getUserId(), oldDeptId, competitionDeptId);
+
+                            user.setDeptId(competitionDeptId);
+                            sysUserService.updateUser(user);
+                            successCount++;
+                        } else {
+                            logger.debug("用户 {} 已属于竞赛部门 {}, 无需更新", userId, competitionDeptId);
+                        }
+                    } else {
+                        logger.warn("为竞赛 {} 分配用户时，未找到用户ID {}，跳过部门更新。", compId, userId);
+                        failCount++;
                     }
-                } else {
-                    logger.warn("为竞赛 {} 分配用户时，未找到用户ID {}，跳过部门更新。", compId, userId);
                 }
+            } catch (Exception e) {
+                logger.error("为竞赛 {} 分配用户 {} 失败", compId, userId, e);
+                failCount++;
+                // 不抛出异常，继续处理其他用户
             }
         }
-        // Batch insert User-Competition association
+
+        if (failCount > 0) {
+            logger.warn("批量选择授权用户竞赛完成，成功: {}，失败: {}", successCount, failCount);
+        }
+
+        // 批量插入用户-竞赛关联
         return userCompMapper.batchUserComp(list);
     }
 
@@ -657,5 +756,14 @@ public class SysCompServiceImpl implements ISysCompService {
         });
     }
 
-}
+    @Override
+    public List<SysComp> selectMyAssignedCompetitions(Long userId) {
+        return sysCompMapper.selectMyAssignedCompetitions(userId);
+    }
 
+    @Override
+    public List<SysComp> selectUnassignedCompetitions(Long userId) {
+        return sysCompMapper.selectUnassignedCompetitions(userId);
+    }
+
+}

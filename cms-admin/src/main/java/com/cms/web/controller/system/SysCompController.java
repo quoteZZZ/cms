@@ -165,7 +165,7 @@ public R<SysComp> getInfo(
      * 删除竞赛信息（单条）
      */
     @ApiOperation("删除竞赛信息（单条）")
-    @PreAuthorize("@ss.hasPermi('system:comp:remove')") 
+    @PreAuthorize("@ss.hasPermi('system:comp:remove')")
     @Log(title = "竞赛信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{compId}")
     public R<Integer> delete(
@@ -178,7 +178,7 @@ public R<SysComp> getInfo(
      * 删除竞赛信息（批量）
      */
     @ApiOperation("删除竞赛信息（批量）")
-    @PreAuthorize("@ss.hasPermi('system:comp:remove')") 
+    @PreAuthorize("@ss.hasPermi('system:comp:remove')")
     @Log(title = "竞赛信息", businessType = BusinessType.DELETE)
     @PostMapping("/del")
     public R<Integer> batchDelete(@RequestBody Long[] compIds) {
@@ -186,17 +186,40 @@ public R<SysComp> getInfo(
     }
 
     /**
-     * 推荐竞赛信息
+     * 查询已分配给评委的竞赛列表
      */
-    @ApiOperation("推荐竞赛信息")
-    @GetMapping("/recommend")
     @PreAuthorize("@ss.hasPermi('system:comp:list')")
+    @GetMapping("/myAssignedList")
+    public TableDataInfo myAssignedList() {
+        startPage();
+        Long userId = getUserId(); // 获取当前登录用户ID
+        List<SysComp> list = sysCompService.selectMyAssignedCompetitions(userId);
+        return getDataTable(list);
+    }
+
+    /**
+     * 查询未分配给评委的竞赛列表
+     */
+    @PreAuthorize("@ss.hasPermi('system:comp:list')")
+    @GetMapping("/unassignedList")
+    public TableDataInfo unassignedList() {
+        startPage();
+        Long userId = getUserId(); // 获取当前登录用户ID
+        List<SysComp> list = sysCompService.selectUnassignedCompetitions(userId);
+        return getDataTable(list);
+    }
+
+    /**
+     * 查询推荐竞赛
+     */
+    @PreAuthorize("@ss.hasPermi('system:comp:list')")
+    @GetMapping("/recommend")
     public R<List<SysComp>> recommendCompetitions(
-            @ApiParam(value = "推荐类型(random/category/access/latest)", required = true) 
+            @ApiParam(value = "推荐类型(random/category/access/latest)", required = true)
             @RequestParam String type,
-            @ApiParam(value = "竞赛类别（仅当type=category时有效）") 
+            @ApiParam(value = "竞赛类别（仅当type=category时有效）")
             @RequestParam(required = false) Character category,
-            @ApiParam(value = "推荐数量", required = true) 
+            @ApiParam(value = "推荐数量", required = true)
             @RequestParam int count) {
         // 参数校验
         if (count <= 0) {
@@ -205,9 +228,9 @@ public R<SysComp> getInfo(
         if ("category".equalsIgnoreCase(type) && category == null) {
             return R.fail("当推荐类型为category时，必须提供竞赛类别参数");
         }
-        
+
         logger.info("请求推荐竞赛, type={}, category={}, count={}", type, category, count);
-        
+
         try {
             List<SysComp> result = sysCompService.recommendCompetitions(type, category, count);
             return R.ok(result);
@@ -282,12 +305,52 @@ public R<SysComp> getInfo(
     @Log(title = "竞赛管理", businessType = BusinessType.GRANT)
     @PutMapping("/AuthJudge/selectAll")
     public R<Integer> selectAuthUserAll(
-            @ApiParam(value = "竞赛ID", required = true) 
+            @ApiParam(value = "竞赛ID", required = true)
             @RequestParam Long compId,
-            @ApiParam(value = "用户ID集合", required = true) 
+            @ApiParam(value = "用户ID集合", required = true)
             @RequestParam Long[] userIds) {
         return R.ok(sysCompService.insertAuthUsers(compId, userIds));
     }
+
+    /**
+     * 修改竞赛阶段状态
+     */
+    @ApiOperation("修改竞赛阶段状态")
+    @PreAuthorize("@ss.hasPermi('system:comp:edit')")
+    @Log(title = "竞赛信息管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/{compId}/stage")
+    public R<Void> updateCompetitionStage(
+            @ApiParam(value = "竞赛ID", required = true) @PathVariable("compId") Long compId,
+            @ApiParam(value = "新的阶段状态", required = true, example = "0=报名,1=初赛,2=复赛,3=决赛,4=评审,5=公示") @RequestParam("newStageStatus") Character newStageStatus) {
+        // Service层应包含校验逻辑：如竞赛是否存在、状态转换是否合法等
+        // sysCompService.updateCompStageStatus(compId, newStageStatus, getUserId());
+        // 此处仅为示例，实际应调用service层方法
+        SysComp compToUpdate = new SysComp();
+        compToUpdate.setCompId(compId);
+        compToUpdate.setStageStatus(newStageStatus);
+        compToUpdate.setUpdateBy(getUsername());
+        int rows = sysCompService.updateSysComp(compToUpdate); // Assumes updateSysComp can handle partial updates based on non-null fields
+        return rows > 0 ? R.ok() : R.fail("更新竞赛阶段状态失败");
+    }
+
+    /**
+     * 修改竞赛整体状态
+     */
+    @ApiOperation("修改竞赛整体状态")
+    @PreAuthorize("@ss.hasPermi('system:comp:edit')")
+    @Log(title = "竞赛信息管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/{compId}/compStatus")
+    public R<Void> updateCompetitionStatus(
+            @ApiParam(value = "竞赛ID", required = true) @PathVariable("compId") Long compId,
+            @ApiParam(value = "新的竞赛状态", required = true, example = "0=未开始,1=进行中,2=已结束") @RequestParam("newCompStatus") Character newCompStatus) {
+        // Service层应包含校验逻辑
+        // sysCompService.updateCompStatus(compId, newCompStatus, getUserId());
+        SysComp compToUpdate = new SysComp();
+        compToUpdate.setCompId(compId);
+        compToUpdate.setCompStatus(newCompStatus);
+        compToUpdate.setUpdateBy(getUsername());
+        int rows = sysCompService.updateSysComp(compToUpdate); // Assumes updateSysComp can handle partial updates
+        return rows > 0 ? R.ok() : R.fail("更新竞赛状态失败");
+    }
+
 }
-
-

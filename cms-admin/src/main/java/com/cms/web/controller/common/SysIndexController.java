@@ -1,4 +1,4 @@
-package com.cms.web.controller.system;
+package com.cms.web.controller.common;
 
 import com.cms.common.config.CmsConfig;
 import com.cms.common.utils.StringUtils;
