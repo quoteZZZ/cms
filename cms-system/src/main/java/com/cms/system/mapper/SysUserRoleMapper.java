@@ -54,6 +54,20 @@ public interface SysUserRoleMapper
      */
     public int deleteUserRoleInfos(@Param("roleId") Long roleId, @Param("userIds") Long[] userIds);
 
+    /**
+     * 检查用户是否拥有指定角色代码
+     *
+     * @param userId 用户ID
+     * @param roleKey 角色代码
+     * @return 记录数
+     */
+    int checkUserRoleByKey(@Param("userId") Long userId, @Param("roleKey") String roleKey);
 
-
+    /**
+     * 判断用户是否是评委角色
+     *
+     * @param userId 用户ID
+     * @return 是评委角色返回1，否则返回0
+     */
+    int isJudge(Long userId);
 }

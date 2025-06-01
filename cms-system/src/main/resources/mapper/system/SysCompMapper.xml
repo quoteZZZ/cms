@@ -6,6 +6,7 @@
 
     <resultMap type="SysComp" id="SysCompResult">
         <result property="compId" column="comp_id" />
+        <result property="deptId" column="dept_id" />
         <result property="compName" column="comp_name" />
         <result property="compImageUrl" column="comp_image_url" />
         <result property="compCategory" column="comp_category" />
@@ -26,8 +27,8 @@
     </resultMap>
 
     <sql id="selectSysCompVo">
-        select comp_id, comp_name, comp_image_url, comp_category, comp_mode, comp_status, stage_status, 
-               comp_start_time, comp_end_time, is_recommended, access_frequency, remark, status, 
+        select comp_id, dept_id, comp_name, comp_image_url, comp_category, comp_mode, comp_status, stage_status,
+               comp_start_time, comp_end_time, is_recommended, access_frequency, remark, status,
                del_flag, create_by, create_time, update_by, update_time 
         from sys_comp
     </sql>
@@ -38,6 +39,9 @@
             <!-- compId非空时加入条件 -->
             <if test="sysComp.compId != null and sysComp.compId != ''">
                 AND comp_id LIKE CONCAT('%', TRIM(#{sysComp.compId}), '%')
+            </if>
+            <if test="sysComp.deptId != null">
+                AND dept_id = #{sysComp.deptId}
             </if>
 
             <!-- compName非空时加入条件 -->
@@ -91,6 +95,7 @@
         insert into sys_comp
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="compId != null">comp_id,</if>
+            <if test="deptId != null">dept_id,</if>
             <if test="compName != null and compName != ''">comp_name,</if>
             <if test="compImageUrl != null and compImageUrl != ''">comp_image_url,</if>
             <if test="compCategory != null">comp_category,</if>
@@ -111,6 +116,7 @@
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="compId != null">#{compId},</if>
+            <if test="deptId != null">#{deptId},</if>
             <if test="compName != null and compName != ''">#{compName},</if>
             <if test="compImageUrl != null and compImageUrl != ''">#{compImageUrl},</if>
             <if test="compCategory != null">#{compCategory},</if>
@@ -134,6 +140,7 @@
     <update id="updateSysComp" parameterType="SysComp">
         update sys_comp
         <trim prefix="SET" suffixOverrides=",">
+            <if test="deptId != null">dept_id = #{deptId},</if>
             <if test="compName != null and compName != ''">comp_name = #{compName},</if>
             <if test="compImageUrl != null and compImageUrl != ''">comp_image_url = #{compImageUrl},</if>
             <if test="compCategory != null">comp_category = #{compCategory},</if>
@@ -159,9 +166,9 @@
         update sys_comp set del_flag = 2 where comp_id = #{compId}
     </delete>
 
-    <delete id="deleteSysCompByCompIds" parameterType="String">
+    <delete id="deleteSysCompByCompIds" parameterType="java.util.List">
         update sys_comp set del_flag = 2 where comp_id in
-        <foreach item="compId" collection="array" open="(" separator="," close=")">
+        <foreach item="compId" collection="list" open="(" separator="," close=")">
             #{compId}
         </foreach>
     </delete>
@@ -182,5 +189,12 @@
             WHERE suc.comp_id = sc.comp_id AND suc.user_id = #{userId}
         )
     </select>
+
+    <!-- 递增竞赛访问频率 -->
+    <update id="incrementAccessFrequency" parameterType="Long">
+        UPDATE sys_comp
+        SET access_frequency = access_frequency + 1
+        WHERE comp_id = #{compId} AND del_flag = 0
+    </update>
 
 </mapper>

@@ -44,7 +44,7 @@ spring:
   redis:
     host: "192.168.6.111"           # Redis服务器地址
     port: 6379                    # Redis服务器端口
-    database: 1                   # 使用的Redis数据库索引（非默认0，避免与其他项目冲突）
+    database: 0                  # 使用的Redis数据库索引（非默认0，避免与其他项目冲突）
     password: "365061"            # Redis访问密码
     timeout: "10s"               # Redis连接超时时间
     lettuce:

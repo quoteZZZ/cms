@@ -56,7 +56,7 @@ private static final long serialVersionUID = 1L;
          */
         @Excel(name = "报名状态：0待审核/1已通过/2已拒绝/3已提交/4已评分")
         @ApiModelProperty(value = "报名状态：0待审核/1已通过/2已拒绝/3已提交/4已评分")
-        private String registrStatus;
+        private Character registrStatus;
 
         /**
          * 评分次数：记录作品被评委评分的次数
@@ -98,12 +98,12 @@ private static final long serialVersionUID = 1L;
          */
         @Excel(name = "使用状态：0正常/1停用")
         @ApiModelProperty(value = "使用状态：0正常/1停用")
-        private String status;
+        private Character status;
 
         /**
          * 删除标志：0存在/2删除
          */
         @ApiModelProperty(value = "删除标志：0存在/2删除")
-        private String delFlag;
+        private Character delFlag;
 }
 

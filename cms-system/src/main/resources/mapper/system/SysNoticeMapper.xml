@@ -106,9 +106,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteNoticeById" parameterType="Integer">
         delete from sys_notice where notice_id = #{noticeId}
     </delete>
-    
-    <delete id="deleteNoticeByIds" parameterType="Integer">
-        delete from sys_notice where notice_id in 
+
+    <delete id="deleteNoticeByIds" parameterType="Integer[]">
+        delete from sys_notice where notice_id in
         <foreach item="noticeId" collection="array" open="(" separator="," close=")">
             #{noticeId}
         </foreach>

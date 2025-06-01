@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 报名信息Service业务层处理
  * 
  * @author quoteZZZ
- * @date 2025-03-09
+ * @date 2025-05-26
  */
 @Service
 public class SysRegistrServiceImpl implements ISysRegistrService 
@@ -63,11 +63,19 @@ public class SysRegistrServiceImpl implements ISysRegistrService
         logger.info("查询报名信息列表, sysRegistr: {}", sysRegistr);
         List<SysRegistr> registrList = sysRegistrMapper.selectSysRegistrList(sysRegistr);
 
-        // 调用竞赛业务层，根据竞赛编码查询竞赛信息，更新竞赛名称
+        // 调用竞赛业务层和服务层，根据ID查询并更新竞赛名称和用户名称
         for (SysRegistr registr : registrList) {
-            SysComp sysComp = sysCompService.selectSysCompByCompId(registr.getCompId());
-            if (sysComp != null) {
-                registr.setCompName(sysComp.getCompName());
+            if (registr.getCompId() != null) {
+                SysComp sysComp = sysCompService.selectSysCompByCompId(registr.getCompId());
+                if (sysComp != null) {
+                    registr.setCompName(sysComp.getCompName());
+                }
+            }
+            if (registr.getUserId() != null) {
+                SysUser sysUser = sysUserService.selectUserById(registr.getUserId());
+                if (sysUser != null) {
+                    registr.setUserName(sysUser.getUserName());
+                }
             }
         }
 
@@ -144,11 +152,14 @@ public class SysRegistrServiceImpl implements ISysRegistrService
             sysRegistr.setCreateTime(DateUtils.getNowDate());
 
             // 初始化状态字段
+            if (sysRegistr.getRegistrStatus() == null) {
+                sysRegistr.setRegistrStatus('0'); // 默认报名状态：待审核
+            }
             if (sysRegistr.getStatus() == null) {
-                sysRegistr.setStatus("0"); // 默认状态：正常
+                sysRegistr.setStatus('0'); // 默认状态：正常
             }
             if (sysRegistr.getDelFlag() == null) {
-                sysRegistr.setDelFlag("0"); // 默认删除标志：存在
+                sysRegistr.setDelFlag('0'); // 默认删除标志：存在
             }
             // 评分频率默认为0
             sysRegistr.setScoreCount(0); // 初始化评分频率为0
@@ -219,10 +230,28 @@ public class SysRegistrServiceImpl implements ISysRegistrService
     {
         logger.info("修改报名信息, sysRegistr: {}", sysRegistr);
         try {
+            // If compId is being updated or provided, ensure compName and deptId are consistent
+            if (sysRegistr.getCompId() != null) {
+                SysComp sysComp = validateAndGetSysComp(sysRegistr.getCompId());
+                sysRegistr.setCompName(sysComp.getCompName());
+                if (sysRegistr.getDeptId() == null) {
+                    sysRegistr.setDeptId(sysComp.getDeptId());
+                }
+            }
+
+            // If userId is being updated or provided, ensure userName is consistent
+            if (sysRegistr.getUserId() != null) {
+                SysUser sysUser = validateAndGetSysUser(sysRegistr.getUserId());
+                sysRegistr.setUserName(sysUser.getUserName());
+            }
+
             sysRegistr.setUpdateTime(DateUtils.getNowDate());
             int result = sysRegistrMapper.updateSysRegistr(sysRegistr);
             logger.info("修改报名信息结果: {}", result);
             return result;
+        } catch (IllegalArgumentException e) {
+            logger.warn("修改报名信息验证失败: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.error("修改报名信息失败, sysRegistr: {}", sysRegistr, e);
             throw new RuntimeException("修改报名信息失败", e);
@@ -236,7 +265,7 @@ public class SysRegistrServiceImpl implements ISysRegistrService
      * @return 结果
      */
     @Override
-    public int deleteSysRegistrByRegistrIds(Long[] registrIds)
+    public int deleteSysRegistrByRegistrIds(List<Long> registrIds)
     {
         logger.info("批量删除报名信息, registrIds: {}", registrIds);
         try {

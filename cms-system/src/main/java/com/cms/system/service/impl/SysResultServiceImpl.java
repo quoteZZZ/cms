@@ -225,7 +225,13 @@ public class SysResultServiceImpl implements ISysResultService
             }
 
             sysResult.setCreateTime(DateUtils.getNowDate());
-            sysResult.setFinalScore(sysResult.getFinalScore().multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP));
+            // 修正: 确保 finalScore 不为空
+            if (sysResult.getFinalScore() != null) {
+                // 实体中finalScore是Double类型，不需要转换
+                // 但可能需要对精度进行处理
+                double roundedScore = Math.round(sysResult.getFinalScore() * 100) / 100.0;
+                sysResult.setFinalScore(roundedScore);
+            }
 
             // 使用分布式锁确保操作原子性
             String lockKey = SCORE_CALC_LOCK_PREFIX + "registr:" + sysResult.getRegistrId();
@@ -439,11 +445,11 @@ public class SysResultServiceImpl implements ISysResultService
                 newResult.setCompId(compId);
                 newResult.setRegistrId(registrId);
                 newResult.setUserId(userId);
-                newResult.setFinalScore(BigDecimal.valueOf(finalScore).setScale(2, RoundingMode.HALF_UP));
+                newResult.setFinalScore(Math.round(finalScore * 100) / 100.0);
                 newResult.setCreateTime(DateUtils.getNowDate());
                 newResult.setUpdateTime(DateUtils.getNowDate());
-                newResult.setStatus("0");
-                newResult.setDelFlag("0");
+                newResult.setStatus('0'); // 默认状态为0
+                newResult.setDelFlag('0');
 
                 sysResultMapper.insertSysResult(newResult);
                 logger.info("成功插入新成绩记录: {}", newResult);
@@ -453,7 +459,7 @@ public class SysResultServiceImpl implements ISysResultService
                         newResult, CACHE_EXPIRE_TIME, TimeUnit.MINUTES);
             } else {
                 // 更新已存在的成绩记录
-                existingResult.setFinalScore(BigDecimal.valueOf(finalScore).setScale(2, RoundingMode.HALF_UP));
+                existingResult.setFinalScore(Math.round(finalScore * 100) / 100.0);
                 existingResult.setUpdateTime(DateUtils.getNowDate());
 
                 sysResultMapper.updateSysResult(existingResult);
@@ -485,9 +491,9 @@ public class SysResultServiceImpl implements ISysResultService
             }
 
             sysResult.setUpdateTime(DateUtils.getNowDate());
-            // 确保 finalScore 以两位小数精度存储
+            // 确保 finalScore 保留两位小数
             if (sysResult.getFinalScore() != null) {
-                sysResult.setFinalScore(sysResult.getFinalScore().setScale(2, RoundingMode.HALF_UP));
+                sysResult.setFinalScore(Math.round(sysResult.getFinalScore() * 100) / 100.0);
             }
 
             String lockKey = SCORE_CALC_LOCK_PREFIX + "result:" + sysResult.getResultId();
@@ -514,14 +520,14 @@ public class SysResultServiceImpl implements ISysResultService
      */
     @Override
     @Transactional
-    public int deleteSysResultByResultIds(Long[] resultIds) {
+    public int deleteSysResultByResultIds(List<Long> resultIds) {
         logger.info("批量删除成绩结果, resultIds: {}", resultIds);
         try {
-            if (resultIds == null || resultIds.length == 0) {
+            if (resultIds == null || resultIds.isEmpty()) {
                 throw new ServiceException("删除的成绩ID不能为空", 400);
             }
 
-            String lockKey = SCORE_CALC_LOCK_PREFIX + "batch:" + Arrays.toString(resultIds);
+            String lockKey = SCORE_CALC_LOCK_PREFIX + "batch:" + resultIds.toString();
 
             return redissonLockUtil.executeWithLock(lockKey, () -> {
                 int rows = sysResultMapper.deleteSysResultByResultIds(resultIds);
@@ -576,41 +582,94 @@ public class SysResultServiceImpl implements ISysResultService
 
     // 添加@SafeVarargs注解
     @SafeVarargs
-    public final BigDecimal calculateWeightedAverage(List<Map.Entry<BigDecimal, Double>>... scoreWeights) {
-        BigDecimal totalWeightedScore = BigDecimal.ZERO;
-        BigDecimal totalWeight = BigDecimal.ZERO;
+    public final double calculateWeightedAverage(List<Map.Entry<Double, Double>>... scoreWeights) {
+        double totalWeightedScore = 0.0;
+        double totalWeight = 0.0;
         
-        for (List<Map.Entry<BigDecimal, Double>> scoreWeightList : scoreWeights) {
+        for (List<Map.Entry<Double, Double>> scoreWeightList : scoreWeights) {
             if (scoreWeightList == null) {
                 continue; // 防止空列表导致NPE
             }
-            for (Map.Entry<BigDecimal, Double> entry : scoreWeightList) {
+            for (Map.Entry<Double, Double> entry : scoreWeightList) {
                 if (entry == null || entry.getKey() == null) {
                     continue; // 跳过空条目
                 }
-                BigDecimal score = entry.getKey();
-                // 修改: 确保 entry.getValue() 不为 null 并转换为 BigDecimal
-                Double weightValue = entry.getValue();
-                BigDecimal weight = (weightValue != null) ? BigDecimal.valueOf(weightValue) : BigDecimal.ZERO;
+                double score = entry.getKey();
+                double weight = (entry.getValue() != null) ? entry.getValue() : 0.0;
                 
-                totalWeightedScore = totalWeightedScore.add(score.multiply(weight));
-                totalWeight = totalWeight.add(weight);
+                totalWeightedScore += score * weight;
+                totalWeight += weight;
             }
         }
         
         // 避免除零错误
-        if (totalWeight.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
+        if (totalWeight == 0.0) {
+            return 0.0;
         }
         
-        return totalWeightedScore.divide(totalWeight, 2, RoundingMode.HALF_UP);
+        return totalWeightedScore / totalWeight;
     }
 
     private void someMethod() { // 假设错误发生在某个方法内部
         // 示例代码
-        BigDecimal aBigDecimal = new BigDecimal("10.5"); // 示例值
+        double aBigDecimal = 10.5; // 修正为直接使用double类型
         double aDouble = 2.5; // 示例值
-        BigDecimal result = aBigDecimal.multiply(BigDecimal.valueOf(aDouble));
+        double result = aBigDecimal * aDouble; // 直接使用double计算
         // 示例代码结束
+    }
+
+    private void calculateAndUpdateResult(Long registrId) {
+        logger.info("触发成绩计算, registrId: {}", registrId);
+        try {
+            // 获取所有该参赛者的评分记录
+            List<SysScore> scoreList = sysScoreMapper.selectScoresByRegistrId(registrId);
+
+            if (scoreList == null || scoreList.isEmpty()) {
+                logger.warn("没有找到评分记录，无法计算成绩, registrId: {}", registrId);
+                return;
+            }
+
+            // 使用 double 进行精确计算
+            double totalScore = 0.0;
+            int validScoreCount = 0;
+
+            for (SysScore score : scoreList) {
+                if (score.getScore() != null) {
+                    totalScore += score.getScore(); // 直接使用 double 类型
+                    validScoreCount++;
+                }
+            }
+
+            if (validScoreCount == 0) {
+                logger.warn("没有有效的评分记录, registrId: {}", registrId);
+                return;
+            }
+
+            // 使用 double 进行除法运算
+            double finalScore = totalScore / validScoreCount;
+            logger.info("计算得到的平均分: {}, registrId: {}", finalScore, registrId);
+
+            // 获取报名信息
+            SysRegistr sysRegistr = sysRegistrMapper.selectSysRegistrByRegistrId(registrId);
+            if (sysRegistr == null) {
+                logger.error("报名信息不存在, registrId: {}", registrId);
+                return;
+            }
+
+            // 构建成绩结果对象
+            SysResult sysResult = new SysResult();
+            sysResult.setCompId(sysRegistr.getCompId());
+            sysResult.setUserId(sysRegistr.getUserId());
+            sysResult.setRegistrId(registrId);
+            // 修正: 直接设置Double类型的finalScore，保留两位小数
+            sysResult.setFinalScore(Math.round(finalScore * 100) / 100.0);
+
+            // 调用结果服务保存成绩
+            insertSysResult(sysResult);
+            logger.info("成绩更新完成, registrId: {}", registrId);
+        } catch (Exception e) {
+            logger.error("计算更新成绩失败", e);
+            // 这里不抛出异常，避免影响主流程
+        }
     }
 }

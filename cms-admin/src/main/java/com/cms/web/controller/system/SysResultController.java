@@ -151,8 +151,8 @@ public class SysResultController extends BaseController {
     @DeleteMapping("/{resultIds}")
     public R<String> remove(
             @ApiParam(value = "成绩结果主键集合", required = true)
-            @PathVariable Long[] resultIds) {
-        if (resultIds == null || resultIds.length == 0) {
+            @PathVariable List<Long> resultIds) {
+        if (resultIds == null || resultIds.isEmpty()) {
             return R.fail("成绩结果ID不能为空");
         }
         int rows = sysResultService.deleteSysResultByResultIds(resultIds);

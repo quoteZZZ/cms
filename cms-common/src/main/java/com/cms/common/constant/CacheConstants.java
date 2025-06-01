@@ -44,206 +44,84 @@ public final class CacheConstants {
     public static final String RATE_LIMIT_KEY = "rate_limit:";
 
     /**
-     * 登录账户密码错误次数 redis key
+     * 登录密码错误次数 redis key 前缀
+     * 用于记录用户登录密码错误次数
      */
     public static final String PWD_ERR_CNT_KEY = "pwd_err_cnt:";
 
-    // ------------------ 通知相关 ------------------
-
     /**
-     * 通知信息缓存 key 前缀
+     * 竞赛信息缓存 key (单个竞赛信息)
      */
-    public static final String NOTICE_INFO_KEY = "sys_notice:";
+    public static final String COMP_INFO_KEY = "sys_comp:info:";
 
     /**
-     * 通知列表缓存 key 前缀（精细化缓存 key）
+     * 竞赛列表缓存 key (查询结果列表)
      */
-    public static final String NOTICE_LIST_KEY = "notice:list:";
-
-    // ------------------ 审批相关 ------------------
+    public static final String COMP_LIST_KEY = "sys_comp:list:";
 
     /**
-     * 审批信息缓存 key 前缀
+     * 竞赛空值缓存 key (处理缓存穿透)
      */
-    public static final String APPROVAL_INFO_KEY = "sys_approval:";
+    public static final String COMP_EMPTY_KEY = "sys_comp:empty:";
 
     /**
-     * 审批列表缓存 key 前缀（精细化缓存 key）
+     * 竞赛逻辑过期缓存 key (异步更新机制)
      */
-    public static final String APPROVAL_LIST_KEY = "approval:list:";
-
-    // ------------------ 奖项相关 ------------------
+    public static final String COMP_LOGICAL_EXPIRE_KEY = "sys_comp:expire:";
 
     /**
-     * 奖项信息缓存 key 前缀
+     * 竞赛分布式锁前缀
      */
-    public static final String AWARD_INFO_KEY = "sys_award:";
+    public static final String COMP_LOCK_KEY = "sys_comp:lock:";
 
     /**
-     * 奖项列表缓存 key 前缀
+     * 竞赛推荐缓存 key
      */
-    public static final String AWARD_LIST_KEY = "award:list:";
+    public static final String COMP_RECOMMEND_KEY = "sys_comp:recommend:";
 
     /**
-     * 奖项统计缓存 key 前缀
-     */
-    public static final String AWARD_STATISTICS_KEY = "award:statistics:";
-
-    // ------------------ 竞赛相关 ------------------
-
-    /**
-     * 竞赛信息缓存 key 前缀
-     */
-    public static final String COMP_INFO_KEY = "sys_comp:";
-
-    /**
-     * 竞赛列表缓存 key 前缀（精细化缓存 key）
-     */
-    public static final String COMP_LIST_KEY = "comp:list:";
-
-    /**
-     * 竞赛推荐缓存 key 前缀
-     */
-    public static final String COMP_RECOMMEND_KEY = "comp:recommend:";
-
-    // ------------------ 逻辑过期策略相关常量 ------------------
-
-    /**
-     * 逻辑过期时间（单位：秒）
-     */
-    public static final long LOGICAL_EXPIRE_TIME = 60 * 60; // 1小时
-
-    /**
-     * 逻辑过期检查窗口（单位：秒）
-     */
-    public static final long LOGICAL_EXPIRE_CHECK_WINDOW = 60 * 5; // 5分钟
-
-    // ------------------ 素材/资料相关 ------------------
-
-    /**
-     * 资料信息缓存 key 前缀
-     */
-    public static final String MATERIAL_INFO_KEY = "sys_material:";
-
-    /**
-     * 资料列表缓存 key 前缀（精细化缓存 key）
-     */
-    public static final String MATERIAL_LIST_KEY = "material:list:";
-
-    // ------------------ 反馈相关 ------------------
-
-    /**
-     * 反馈信息缓存 key 前缀
-     */
-    public static final String FEEDBACK_INFO_KEY = "sys_feedback:";
-
-    /**
-     * 反馈列表缓存 key 前缀
-     */
-    public static final String FEEDBACK_LIST_KEY = "feedback:list:";
-
-    // ------------------ 参与相关 ------------------
-
-    /**
-     * 参与信息缓存 key 前缀
-     */
-    public static final String PARTICIPATION_INFO_KEY = "sys_participation:";
-
-    /**
-     * 参与列表缓存 key 前缀
-     */
-    public static final String PARTICIPATION_LIST_KEY = "participation:list:";
-
-    // ------------------ 评分相关 ------------------
-
-    /**
-     * 评分信息缓存 key 前缀
-     */
-    public static final String SCORE_INFO_KEY = "sys_score:";
-
-    /**
-     * 评分列表缓存 key 前缀
-     */
-    public static final String SCORE_LIST_KEY = "score:list:";
-
-    // ------------------ 部门相关 ------------------
-
-    /**
-     * 部门信息缓存 key 前缀
-     */
-    public static final String DEPT_INFO_KEY = "sys_dept:";
-
-    /**
-     * 部门列表缓存 key 前缀
-     */
-    public static final String DEPT_LIST_KEY = "dept:list:";
-
-    // ------------------ 作品/提交相关 ------------------
-
-    /**
-     * 作品信息缓存 key 前缀
-     */
-    public static final String SUBMISSION_INFO_KEY = "sys_submission:";
-
-    /**
-     * 作品列表缓存 key 前缀
-     */
-    public static final String SUBMISSION_LIST_KEY = "submission:list:";
-
-    /**
-     * 作品最大文件key 前缀
-     */
-    public static final Integer MAX_SUBMISSION_FILE_SIZE = 1024 * 1024 * 10; // 10M
-
-    // ------------------ 其它 ------------------
-
-    /**
-     * 角色信息缓存 key 前缀
-     */
-    public static final String ROLE_KEY = "sys_role:";
-
-    /**
-     * 角色竞赛关联缓存 key 前缀
-     */
-    public static final String ROLE_COMP_KEY = "sys_role_comp:";
-
-    /**
-     * 角色菜单关联缓存 key 前缀
-     */
-    public static final String ROLE_MENU_KEY = "sys_role_menu:";
-
-    /**
-     * 用户信息缓存 key 前缀
-     */
-    public static final String USER_KEY = "sys_user:";
-
-    /**
-     * 用户竞赛关联缓存 key 前缀
+     * 竞赛用户关联缓存 key
      */
     public static final String USER_COMP_KEY = "sys_user_comp:";
 
-    /**
-     * 用户角色关联缓存 key 前缀
-     */
-    public static final String USER_ROLE_KEY = "sys_user_role:";
-
-    // 缓存 TTL 与延时删除时间配置
+    // ============== 缓存TTL相关常量 ==============
 
     /**
-     * 缓存默认过期时间（秒）
+     * 默认缓存过期时间（秒）
+     * 10分钟 = 600秒
      */
-    public static final Long CACHE_TTL_SECONDS = 3600L;
+    public static final int DEFAULT_CACHE_TTL = 600;
 
     /**
-     * 延时删除时间（毫秒）
+     * 空值缓存过期时间（秒）
+     * 空值缓存时间较短，避免长时间占用内存
+     * 2分钟 = 120秒
      */
-    public static final Long DELAY_DELETE_MS = 500L;
+    public static final int EMPTY_CACHE_TTL = 120;
 
     /**
-     * 默认缓存时间（秒）
+     * 逻辑过期时间（秒）
+     * 1小时 = 3600秒
      */
-    public static final Integer DEFAULT_CACHE_TTL = 3600; // 统一缓存时间（秒）
+    public static final int LOGICAL_EXPIRE_TTL = 3600;
 
-    // 禁止实例化
-    private CacheConstants() {}
+    /**
+     * 缓存逻辑过期检查窗口（秒）
+     * 当缓存剩余时间小于此值时，触发异步更新
+     * 60秒 = 1分钟
+     */
+    public static final int LOGICAL_EXPIRE_CHECK_WINDOW = 60;
+
+    /**
+     * 防雪崩随机TTL最大值（秒）
+     * 用于在基础TTL上增加随机时间，避免同时过期
+     */
+    public static final int CACHE_TTL_RANDOM_MAX = 300;
+
+    /**
+     * 分布式锁默认超时时间（秒）
+     */
+    public static final int LOCK_TIMEOUT = 10;
+
+    public static final String JUDGE_ROLE_KEY = "sys_role:judge:";
 }

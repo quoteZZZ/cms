@@ -5,6 +5,7 @@ import com.cms.common.constant.UserConstants;
 import com.cms.common.core.domain.entity.SysRole;
 import com.cms.common.core.domain.entity.SysUser;
 import com.cms.common.exception.ServiceException;
+import com.cms.common.redis.RedisCacheUtil;
 import com.cms.common.utils.SecurityUtils;
 import com.cms.common.utils.StringUtils;
 import com.cms.common.utils.bean.BeanValidators;
@@ -16,7 +17,9 @@ import com.cms.common.core.domain.entity.SysUserRole;
 import com.cms.system.mapper.*;
 import com.cms.system.service.ISysConfigService;
 import com.cms.system.service.ISysDeptService;
+import com.cms.system.service.ISysUserCompService;
 import com.cms.system.service.ISysUserService;
+import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +27,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import javax.validation.Validator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import com.cms.common.constant.CacheConstants;
+
 
 /**
  * 用户管理业务层实现类：
@@ -63,6 +71,32 @@ public class SysUserServiceImpl implements ISysUserService
 
     @Autowired
     protected Validator validator;// 校验器
+
+    @Resource(name = "threadPoolTaskExecutor")
+    private Executor asyncExecutor; // 引入线程池
+
+    @Resource
+    private SysCompMapper sysCompMapper;
+
+    @Resource
+    private SysUserCompMapper userCompMapper;
+
+    @Resource
+    private RedisCacheUtil redisCacheUtil;
+
+    @Resource
+    private RedissonClient redissonClient;
+    @Resource
+    private SysRoleDeptMapper roleDeptMapper; // 注入SysRoleDeptMapper
+
+    @Resource
+    private ISysUserService sysUserService; // 注入ISysUserService
+
+    @Resource
+    private ISysUserCompService userCompService; // 注入ISysUserCompService
+
+    // 定义日志记录器
+    Logger logger = LoggerFactory.getLogger(SysUserServiceImpl.class);
 
     /**
      * 根据条件分页查询用户列表
@@ -588,14 +622,83 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 判断用户是否为评委角色
+     * 判断用户是否为评委
+     *
      * @param userId 用户ID
-     * @return true-是评委，false-不是评委
-     * @description 通过角色ID=3判断（需确保数据库中评委角色ID为3）
+     * @return 是否为评委
      */
+    @Override
     public boolean isJudge(Long userId) {
-        return userMapper.isJudge(userId) > 0; // 存在角色 ID = 3，则返回 true
+        if (userId == null) {
+            return false;
+        }
+
+        try {
+            // 这里假设评委角色ID为3，直接查询数据库
+            int count = userRoleMapper.isJudge(userId);
+            return count > 0;
+        } catch (Exception e) {
+            log.error("判断用户是否为评委失败，userId: {}", userId, e);
+            // 发生异常时返回默认值：非评委
+            return false;
+        }
     }
 
+    /**
+     * 批量更新用户部门
+     *
+     * @param users 用户列表
+     * @return 更新的记录数
+     */
+    @Override
+    @Transactional
+    public int batchUpdateUserDept(List<SysUser> users) {
+        if (users == null || users.isEmpty()) {
+            return 0;
+        }
 
+        int count = 0;
+        try {
+            // 批处理阈值，每批次处理的最大记录数
+            final int BATCH_SIZE = 100;
+            List<List<SysUser>> batches = new ArrayList<>();
+
+            // 将用户列表分批，避免一次性处理过多记录
+            for (int i = 0; i < users.size(); i += BATCH_SIZE) {
+                int endIndex = Math.min(i + BATCH_SIZE, users.size());
+                batches.add(users.subList(i, endIndex));
+            }
+
+            // 按批次处理数据
+            for (List<SysUser> batch : batches) {
+                count += userMapper.batchUpdateUserDept(batch);
+            }
+
+            return count;
+        } catch (Exception e) {
+            logger.error("批量更新用户部门失败", e);
+            throw new ServiceException("批量更新用户部门失败");
+        }
+    }
+
+    /**
+     * 根据用户ID列表批量查询用户
+     *
+     * @param userIds 用户ID列表
+     * @return 用户列表
+     */
+    @Override
+    public List<SysUser> selectUsersByIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            // 优化查询：使用 IN 条件一次查询，减少数据库交互
+            return userMapper.selectUsersByIds(userIds);
+        } catch (Exception e) {
+            logger.error("批量查询用户信息失败", e);
+            throw new ServiceException("批量查询用户信息失败");
+        }
+    }
 }

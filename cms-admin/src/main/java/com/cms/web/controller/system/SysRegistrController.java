@@ -129,7 +129,7 @@ public class SysRegistrController extends BaseController {
     @PutMapping("/status")
     public R<String> updateRegistrStatus(
             @ApiParam(value = "报名ID", required = true) @RequestParam Long registrId,
-            @ApiParam(value = "新的报名状态", required = true, example = "0=待审核,1=已通过,2=已拒绝") @RequestParam String registrStatus) {
+            @ApiParam(value = "新的报名状态", required = true, example = "0=待审核,1=已通过,2=已拒绝") @RequestParam Character registrStatus) {
         if (registrId == null || registrStatus == null) {
             return R.fail("报名ID和状态不能为空");
         }
@@ -164,7 +164,7 @@ public class SysRegistrController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:registr:remove')")
     @Log(title = "报名信息", businessType = BusinessType.DELETE)
     @PostMapping("/del")
-    public R<Integer> batchDelete(@RequestBody Long[] registrIds) {
+    public R<Integer> batchDelete(@RequestBody List<Long> registrIds) {
         return R.ok(sysRegistrService.deleteSysRegistrByRegistrIds(registrIds));
     }
     

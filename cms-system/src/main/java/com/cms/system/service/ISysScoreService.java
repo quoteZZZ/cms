@@ -49,7 +49,7 @@ public interface ISysScoreService
      * @param scoreIds 需要删除的评分信息主键集合
      * @return 结果
      */
-    public int deleteSysScoreByScoreIds(Long[] scoreIds);
+    public int deleteSysScoreByScoreIds(List<Long> scoreIds);
 
     /**
      * 删除评分信息信息

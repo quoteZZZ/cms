@@ -43,8 +43,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </foreach> 
 	</delete>
 
+	<!-- 检查用户是否拥有指定角色代码 -->
+    <select id="checkUserRoleByKey" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM sys_user_role ur
+        LEFT JOIN sys_role r ON ur.role_id = r.role_id
+        WHERE ur.user_id = #{userId} AND r.role_key = #{roleKey}
+    </select>
 
+    <!-- 判断用户是否是评委角色 -->
+    <select id="isJudge" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM sys_user_role
+        WHERE user_id = #{userId} AND role_id = 3
+    </select>
 
+</mapper>
 
-
-</mapper> 

@@ -85,14 +85,14 @@ public class SysResult extends BaseEntity {
      */
     @Excel(name = "最终得分：参赛作品的综合得分")
     @ApiModelProperty(value = "最终得分：参赛作品的综合得分")
-    private BigDecimal finalScore;
+    private Double finalScore;
 
     /**
      * 排名：在本竞赛中的名次
      */
     @Excel(name = "排名：在本竞赛中的名次")
     @ApiModelProperty(value = "排名：在本竞赛中的名次")
-    private Long rankNum;
+    private Integer rankNum;
 
     /**
      * 获奖等级：如一等奖/二等奖/三等奖
@@ -106,12 +106,12 @@ public class SysResult extends BaseEntity {
      */
     @Excel(name = "使用状态：0正常/1停用")
     @ApiModelProperty(value = "使用状态：0正常/1停用")
-    private String status;
+    private Character status;
 
     /**
      * 删除标志：0存在/2删除
      */
     @ApiModelProperty(value = "删除标志：0存在/2删除")
-    private String delFlag;
+    private Character delFlag;
 }
 

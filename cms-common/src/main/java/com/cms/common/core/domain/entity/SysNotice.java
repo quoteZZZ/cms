@@ -25,17 +25,17 @@ import javax.validation.constraints.Size;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ApiModel(description = "通知公告：发布竞赛相关通知、公告对象 sys_notice")
+@ApiModel(description = "通知公告表：发布竞赛相关通知、公告")
 public class SysNotice extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
     /** 公告ID：自增主键 */
     @ApiModelProperty(value = "公告ID：自增主键")
-    private Integer noticeId;  // 改为Integer与数据库一致
+    private Integer noticeId;  // 修改为Integer以匹配数据库中的int类型
 
     /** 公告标题：如"关于XX竞赛的通知" */
-    @Excel(name = "公告标题：如\"关于XX竞赛的通知\"")
+    @Excel(name = "公告标题")
     @ApiModelProperty(value = "公告标题：如\"关于XX竞赛的通知\"")
     @Xss(message = "公告标题不能包含脚本字符")
     @NotBlank(message = "公告标题不能为空")
@@ -43,31 +43,31 @@ public class SysNotice extends BaseEntity
     private String noticeTitle;
 
     /** 公告类型：1通知(如赛事通知)/2公告(如获奖公示) */
-    @Excel(name = "公告类型：1通知(如赛事通知)/2公告(如获奖公示)")
+    @Excel(name = "公告类型", readConverterExp = "1=通知,2=公告")
     @ApiModelProperty(value = "公告类型：1通知(如赛事通知)/2公告(如获奖公示)")
-    private String noticeType;
+    private Character noticeType;
 
     /** 公告内容：支持富文本格式 */
-    @Excel(name = "公告内容：支持富文本格式")
+    @Excel(name = "公告内容")
     @ApiModelProperty(value = "公告内容：支持富文本格式")
-    private byte[] noticeContent;  // 改为byte[]以匹配longblob
+    private String noticeContent;
 
     /** 公告内容字符串(用于前端展示) */
     @ApiModelProperty(value = "公告内容字符串(用于前端展示)")
-    private transient String noticeContentString;  // 添加字符串版本用于前端展示
+    private transient String noticeContentString;
 
     /** 公告状态：0正常/1关闭 */
-    @Excel(name = "公告状态：0正常/1关闭")
+    @Excel(name = "公告状态", readConverterExp = "0=正常,1=关闭")
     @ApiModelProperty(value = "公告状态：0正常/1关闭")
-    private String status;
+    private Character status;
 
     /** 发布用户：关联用户表ID */
-    @Excel(name = "发布用户：关联用户表ID")
+    @Excel(name = "发布用户")
     @ApiModelProperty(value = "发布用户：关联用户表ID")
     private Long userId;
 
     /** 发布部门：关联部门表ID */
-    @Excel(name = "发布部门：关联部门表ID")
+    @Excel(name = "发布部门")
     @ApiModelProperty(value = "发布部门：关联部门表ID")
     private Long deptId;
 

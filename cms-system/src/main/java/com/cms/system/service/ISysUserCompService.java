@@ -46,14 +46,13 @@ public interface ISysUserCompService {
 
     /**
      * 检查用户是否已报名参加某竞赛
+     * 该方法通过直接查询关联表进行判断，避免使用contains进行全表查询，提高性能
      *
      * @param userId 用户ID
      * @param compId 竞赛ID
      * @return true-已报名，false-未报名
      */
-    default boolean isUserJoinedCompetition(Long userId, Long compId) {
-        return selectUserCompetitions(userId).contains(compId);
-    }
+    public boolean isUserJoinedCompetition(Long userId, Long compId);
 
     /**
      * 批量删除竞赛关联关系

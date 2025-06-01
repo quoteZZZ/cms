@@ -49,7 +49,7 @@ public interface ISysResultService
      * @param resultIds 需要删除的成绩结果主键集合
      * @return 结果
      */
-    public int deleteSysResultByResultIds(Long[] resultIds);
+    public int deleteSysResultByResultIds(List<Long> resultIds);
 
     /**
      * 删除成绩结果信息

@@ -97,5 +97,5 @@ public interface SysScoreMapper
      * @param scoreIds 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteSysScoreByScoreIds(Long[] scoreIds);
+    public int deleteSysScoreByScoreIds(List<Long> scoreIds);
 }

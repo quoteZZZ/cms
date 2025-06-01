@@ -222,10 +222,29 @@ public interface ISysUserService
      */
     public String importUser(List<SysUser> userList, Boolean isUpdateSupport, String operName);
 
-    //
+    /**
+     * 批量更新用户部门
+     *
+     * @param users 用户列表
+     * @return 更新的记录数
+     */
+    public int batchUpdateUserDept(List<SysUser> users);
+
+    /**
+     * 根据用户ID列表批量查询用户
+     *
+     * @param userIds 用户ID列表
+     * @return 用户列表
+     */
+    public List<SysUser> selectUsersByIds(List<Long> userIds);
+
+    /**
+     * 判断用户是否为评委
+     *
+     * @param userId 用户ID
+     * @return 是否为评委
+     */
+    public boolean isJudge(Long userId);
+
     List<SysUser> selectJudges();
-
-
-    //判断是否为评委，传入userId，返回true/false
-    boolean isJudge(Long userId);
 }

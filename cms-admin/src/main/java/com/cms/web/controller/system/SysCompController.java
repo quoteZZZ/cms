@@ -27,6 +27,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -181,7 +182,7 @@ public R<SysComp> getInfo(
     @PreAuthorize("@ss.hasPermi('system:comp:remove')")
     @Log(title = "竞赛信息", businessType = BusinessType.DELETE)
     @PostMapping("/del")
-    public R<Integer> batchDelete(@RequestBody Long[] compIds) {
+    public R<Integer> batchDelete(@RequestBody List<Long> compIds) {
         return R.ok(sysCompService.deleteSysCompByCompIds(compIds));
     }
 
@@ -243,114 +244,242 @@ public R<SysComp> getInfo(
     /**
      * 查询已分配用户竞赛列表
      */
+    @ApiOperation("查询已分配用户竞赛列表")
     @PreAuthorize("@ss.hasPermi('system:comp:list')")
     @GetMapping("/AuthJudge/allocatedList")
     public TableDataInfo allocatedList(
             @ApiParam(value = "竞赛ID", required = true)
             @RequestParam Long compId) {
         startPage();
-        SysUser user = new SysUser();
-        user.setCompId(compId); // 设置竞赛ID
-        List<SysUser> list = userService.selectAllocatedJudgeList(user);
-        return getDataTable(list);
+        logger.info("查询已分配用户列表, 竞赛ID: {}", compId);
+
+        if (compId == null) {
+            return getErrorDataTable("竞赛ID不能为空");
+        }
+
+        try {
+            SysUser user = new SysUser();
+            user.setCompId(compId); // 设置竞赛ID
+            List<SysUser> list = userService.selectAllocatedJudgeList(user);
+            logger.info("已分配用户列表查询成功, 竞赛ID: {}, 结果数量: {}", compId, list.size());
+            return getDataTable(list);
+        } catch (Exception e) {
+            logger.error("查询已分配用户列表失败, 竞赛ID: {}, 错误: {}", compId, e.getMessage(), e);
+            return getErrorDataTable("查询失败: " + e.getMessage());
+        }
     }
 
     /**
      * 查询未分配用户竞赛列表
      */
+    @ApiOperation("查询未分配用户竞赛列表")
     @PreAuthorize("@ss.hasPermi('system:comp:list')")
     @GetMapping("/AuthJudge/unallocatedList")
     public TableDataInfo unallocatedList(
             @ApiParam(value = "竞赛ID", required = true)
             @RequestParam Long compId) {
         startPage();
-        SysUser user = new SysUser();
-        user.setCompId(compId); // 设置竞赛ID
-        List<SysUser> list = userService.selectUnallocatedJudgeList(user);
-        // 过滤非评委用户
-        list = list.stream()
-                .filter(sysuser -> userService.isJudge(sysuser.getUserId())) // 调用服务判断是否为评委角色
-                .collect(Collectors.toList());
-        return getDataTable(list);
+        logger.info("查询未分配用户列表, 竞赛ID: {}", compId);
+
+        if (compId == null) {
+            return getErrorDataTable("竞赛ID不能为空");
+        }
+
+        try {
+            SysUser user = new SysUser();
+            user.setCompId(compId); // 设置竞赛ID
+            List<SysUser> list = userService.selectUnallocatedJudgeList(user);
+
+            // 过滤非评委用户
+            List<SysUser> filteredList = list.stream()
+                    .filter(sysuser -> userService.isJudge(sysuser.getUserId()))
+                    .collect(Collectors.toList());
+
+            logger.info("未分配用户列表查询成功, 竞赛ID: {}, 原始结果数量: {}, 过滤后数量: {}",
+                    compId, list.size(), filteredList.size());
+
+            return getDataTable(filteredList);
+        } catch (Exception e) {
+            logger.error("查询未分配用户列表失败, 竞赛ID: {}, 错误: {}", compId, e.getMessage(), e);
+            return getErrorDataTable("查询失败: " + e.getMessage());
+        }
     }
 
+    /**
+     * 获取带有错误消息的空数据表
+     */
+    private TableDataInfo getErrorDataTable(String message) {
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(500);
+        rspData.setMsg(message);
+        rspData.setRows(new ArrayList<>());
+        rspData.setTotal(0);
+        return rspData;
+    }
 
     /**
      * 取消授权用户
      */
+    @ApiOperation("取消授权用户")
     @PreAuthorize("@ss.hasPermi('system:comp:edit')")
     @Log(title = "竞赛管理", businessType = BusinessType.GRANT)
     @PutMapping("/AuthJudge/cancel")
-    public AjaxResult cancelAuthUser(@RequestBody SysUserComp userComp)
-    {
-        return toAjax(sysCompService.deleteAuthUser(userComp));
+    public R<Integer> cancelAuthUser(@RequestBody SysUserComp userComp) {
+        logger.info("取消授权用户, 竞赛ID: {}, 用户ID: {}", userComp.getCompId(), userComp.getUserId());
+
+        // 参数校验
+        if (userComp == null || userComp.getUserId() == null || userComp.getCompId() == null) {
+            logger.warn("取消授权用户参数无效");
+            return R.fail("竞赛ID和用户ID不能为空");
+        }
+
+        try {
+            int result = sysCompService.deleteAuthUser(userComp);
+            if (result > 0) {
+                logger.info("取消授权用户成功, 竞赛ID: {}, 用户ID: {}", userComp.getCompId(), userComp.getUserId());
+                return R.ok(result);
+            } else {
+                logger.warn("取消授权用户失败, 竞赛ID: {}, 用户ID: {}, 可能不存在此关联",
+                        userComp.getCompId(), userComp.getUserId());
+                return R.fail("取消授权用户失败，可能不存在此关联");
+            }
+        } catch (Exception e) {
+            logger.error("取消授权用户异常, 竞赛ID: {}, 用户ID: {}, 错误: {}",
+                    userComp.getCompId(), userComp.getUserId(), e.getMessage(), e);
+            return R.fail("取消授权用户失败: " + e.getMessage());
+        }
     }
 
     /**
      * 批量取消授权用户
      */
+    @ApiOperation("批量取消授权用户")
     @PreAuthorize("@ss.hasPermi('system:comp:edit')")
     @Log(title = "竞赛管理", businessType = BusinessType.GRANT)
-    @PutMapping("/AuthJudge/cancelAll")
+    @PostMapping("/AuthJudge/cancelAll")
     public R<Integer> cancelAuthUserAll(
-            @ApiParam(value = "竞赛ID", required = true) Long compId,
-            @ApiParam(value = "用户ID集合", required = true) @RequestBody Long[] userIds) {
-        return R.ok(sysCompService.deleteAuthUsers(compId, userIds));
+            @ApiParam(value = "批量取消授权参数", required = true)
+            @RequestBody CancelAuthRequest request) {
+
+        Long compId = request.getCompId();
+        Long[] userIds = request.getUserIds();
+
+        logger.info("批量取消授权用户, 竞赛ID: {}, 用户数量: {}", compId, userIds != null ? userIds.length : 0);
+
+        // 参数校验
+        if (compId == null) {
+            logger.warn("批量取消授权用户失败: 竞赛ID为空");
+            return R.fail("竞赛ID不能为空");
+        }
+
+        if (userIds == null || userIds.length == 0) {
+            logger.warn("批量取消授权用户失败: 用户ID列表为空");
+            return R.fail("用户ID列表不能为空");
+        }
+
+        try {
+            int result = sysCompService.deleteAuthUsers(compId, userIds);
+            logger.info("批量取消授权用户完成, 竞赛ID: {}, 影响行数: {}", compId, result);
+
+            if (result > 0) {
+                return R.ok(result, "成功取消" + result + "个用户的授权");
+            } else {
+                return R.fail("没有用户授权被取消，可能指定的用户未分配到此竞赛");
+            }
+        } catch (Exception e) {
+            logger.error("批量取消授权用户异常, 竞赛ID: {}, 错误: {}", compId, e.getMessage(), e);
+            return R.fail("批量取消授权用户失败: " + e.getMessage());
+        }
     }
 
     /**
      * 批量选择用户授权
      */
+    @ApiOperation("批量选择用户授权")
     @PreAuthorize("@ss.hasPermi('system:comp:edit')")
     @Log(title = "竞赛管理", businessType = BusinessType.GRANT)
-    @PutMapping("/AuthJudge/selectAll")
+    @PostMapping("/AuthJudge/selectAll")
     public R<Integer> selectAuthUserAll(
-            @ApiParam(value = "竞赛ID", required = true)
-            @RequestParam Long compId,
-            @ApiParam(value = "用户ID集合", required = true)
-            @RequestParam Long[] userIds) {
-        return R.ok(sysCompService.insertAuthUsers(compId, userIds));
+            @ApiParam(value = "批量授权参数", required = true)
+            @RequestBody AuthUserRequest request) {
+
+        Long compId = request.getCompId();
+        Long[] userIds = request.getUserIds();
+
+        logger.info("批量选择用户授权, 竞赛ID: {}, 用户数量: {}", compId, userIds != null ? userIds.length : 0);
+
+        // 参数校验
+        if (compId == null) {
+            logger.warn("批量选择用户授权失败: 竞赛ID为空");
+            return R.fail("竞赛ID不能为空");
+        }
+
+        if (userIds == null || userIds.length == 0) {
+            logger.warn("批量选择用户授权失败: 用户ID列表为空");
+            return R.fail("用户ID列表不能为空");
+        }
+
+        try {
+            int result = sysCompService.insertAuthUsers(compId, userIds);
+
+            if (result > 0) {
+                logger.info("批量选择用户授权成功, 竞赛ID: {}, 成功授权数量: {}", compId, result);
+                return R.ok(result, "成功授权" + result + "个用户");
+            } else {
+                logger.warn("批量选择用户授权未生效, 竞赛ID: {}, 可能用户已被授权", compId);
+                return R.fail("未成功授权任何用户，可能用户已被授权");
+            }
+        } catch (Exception e) {
+            logger.error("批量选择用户授权异常, 竞赛ID: {}, 错误: {}", compId, e.getMessage(), e);
+            return R.fail("批量授权用户失败: " + e.getMessage());
+        }
     }
 
     /**
-     * 修改竞赛阶段状态
+     * 用于取消授权的请求对象
      */
-    @ApiOperation("修改竞赛阶段状态")
-    @PreAuthorize("@ss.hasPermi('system:comp:edit')")
-    @Log(title = "竞赛信息管理", businessType = BusinessType.UPDATE)
-    @PutMapping("/{compId}/stage")
-    public R<Void> updateCompetitionStage(
-            @ApiParam(value = "竞赛ID", required = true) @PathVariable("compId") Long compId,
-            @ApiParam(value = "新的阶段状态", required = true, example = "0=报名,1=初赛,2=复赛,3=决赛,4=评审,5=公示") @RequestParam("newStageStatus") Character newStageStatus) {
-        // Service层应包含校验逻辑：如竞赛是否存在、状态转换是否合法等
-        // sysCompService.updateCompStageStatus(compId, newStageStatus, getUserId());
-        // 此处仅为示例，实际应调用service层方法
-        SysComp compToUpdate = new SysComp();
-        compToUpdate.setCompId(compId);
-        compToUpdate.setStageStatus(newStageStatus);
-        compToUpdate.setUpdateBy(getUsername());
-        int rows = sysCompService.updateSysComp(compToUpdate); // Assumes updateSysComp can handle partial updates based on non-null fields
-        return rows > 0 ? R.ok() : R.fail("更新竞赛阶段状态失败");
+    public static class CancelAuthRequest {
+        private Long compId;
+        private Long[] userIds;
+
+        public Long getCompId() {
+            return compId;
+        }
+
+        public void setCompId(Long compId) {
+            this.compId = compId;
+        }
+
+        public Long[] getUserIds() {
+            return userIds;
+        }
+
+        public void setUserIds(Long[] userIds) {
+            this.userIds = userIds;
+        }
     }
 
     /**
-     * 修改竞赛整体状态
+     * 用于用户授权的请求对象
      */
-    @ApiOperation("修改竞赛整体状态")
-    @PreAuthorize("@ss.hasPermi('system:comp:edit')")
-    @Log(title = "竞赛信息管理", businessType = BusinessType.UPDATE)
-    @PutMapping("/{compId}/compStatus")
-    public R<Void> updateCompetitionStatus(
-            @ApiParam(value = "竞赛ID", required = true) @PathVariable("compId") Long compId,
-            @ApiParam(value = "新的竞赛状态", required = true, example = "0=未开始,1=进行中,2=已结束") @RequestParam("newCompStatus") Character newCompStatus) {
-        // Service层应包含校验逻辑
-        // sysCompService.updateCompStatus(compId, newCompStatus, getUserId());
-        SysComp compToUpdate = new SysComp();
-        compToUpdate.setCompId(compId);
-        compToUpdate.setCompStatus(newCompStatus);
-        compToUpdate.setUpdateBy(getUsername());
-        int rows = sysCompService.updateSysComp(compToUpdate); // Assumes updateSysComp can handle partial updates
-        return rows > 0 ? R.ok() : R.fail("更新竞赛状态失败");
-    }
+    public static class AuthUserRequest {
+        private Long compId;
+        private Long[] userIds;
 
+        public Long getCompId() {
+            return compId;
+        }
+
+        public void setCompId(Long compId) {
+            this.compId = compId;
+        }
+
+        public Long[] getUserIds() {
+            return userIds;
+        }
+
+        public void setUserIds(Long[] userIds) {
+            this.userIds = userIds;
+        }
+    }
 }

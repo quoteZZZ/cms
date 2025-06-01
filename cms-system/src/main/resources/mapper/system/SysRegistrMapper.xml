@@ -9,14 +9,14 @@
         <result property="compId" column="comp_id" />
         <result property="userId" column="user_id" />
         <result property="deptId" column="dept_id" />
-        <result property="registrStatus" column="registr_status" />
+        <result property="registrStatus" column="registr_status" jdbcType="CHAR"/>
         <result property="scoreCount" column="score_count" />
         <result property="materialUrl" column="material_url" />
         <result property="compName" column="comp_name" />
         <result property="userName" column="user_name" />
         <result property="remark" column="remark" />
-        <result property="status" column="status" />
-        <result property="delFlag" column="del_flag" />
+        <result property="status" column="status" jdbcType="CHAR"/>
+        <result property="delFlag" column="del_flag" jdbcType="CHAR"/>
         <result property="createBy" column="create_by" />
         <result property="createTime" column="create_time" />
         <result property="updateBy" column="update_by" />
@@ -24,45 +24,55 @@
     </resultMap>
 
     <sql id="selectSysRegistrVo">
-        select registr_id, comp_id, user_id, dept_id, registr_status, 
-               score_count, material_url, comp_name, user_name, remark,
-               status, del_flag, create_by, create_time, update_by, update_time 
-        from sys_registr
+        select u.registr_id, u.comp_id, u.user_id, u.dept_id, u.registr_status,
+               u.score_count, u.material_url, u.comp_name, u.user_name, u.remark,
+               u.status, u.del_flag, u.create_by, u.create_time, u.update_by, u.update_time
+        from sys_registr u
     </sql>
 
     <select id="selectSysRegistrList" parameterType="SysRegistr" resultMap="SysRegistrResult">
         <include refid="selectSysRegistrVo"/>
         <where>
             <!-- compId非空时加入条件 -->
-            <if test="sysRegistr.compId != null and sysRegistr.compId != ''">
-                AND comp_id = #{sysRegistr.compId}
+            <if test="compId != null and compId != ''">
+                AND u.comp_id = #{compId}
+            </if>
+            <if test="userId != null">
+                AND u.user_id = #{userId}
+            </if>
+            <if test="deptId != null">
+                AND u.dept_id = #{deptId}
             </if>
             <!-- registrStatus非空时加入条件 -->
-            <if test="sysRegistr.registrStatus != null and sysRegistr.registrStatus != ''">
-                AND registr_status = #{sysRegistr.registrStatus}
+            <if test="registrStatus != null">
+                AND u.registr_status = #{registrStatus, jdbcType=CHAR}
+            </if>
+            <!-- status非空时加入条件 -->
+            <if test="status != null">
+                AND u.status = #{status, jdbcType=CHAR}
             </if>
             <!-- delFlag非空时加入条件 -->
-            <if test="sysRegistr.delFlag != null and sysRegistr.delFlag != ''">
-                AND del_flag = #{sysRegistr.delFlag}
+            <if test="delFlag != null">
+                AND u.del_flag = #{delFlag, jdbcType=CHAR}
             </if>
             <!-- 删除标志始终为0 -->
-            AND del_flag = 0
+            AND u.del_flag = '0'
         </where>
     </select>
 
     <select id="selectSysRegistrByRegistrId" parameterType="Long" resultMap="SysRegistrResult">
         <include refid="selectSysRegistrVo"/>
-        where registr_id = #{registrId} and del_flag = 0
+        where u.registr_id = #{registrId} and u.del_flag = '0'
     </select>
 
     <select id="selectSysRegistrByUserIdAndCompId" parameterType="Long" resultMap="SysRegistrResult">
         <include refid="selectSysRegistrVo"/>
-        where user_id = #{userId} and comp_id = #{compId} and del_flag = 0
+        where u.user_id = #{userId} and u.comp_id = #{compId} and u.del_flag = '0'
     </select>
 
     <select id="selectSysRegistrListByCompId" parameterType="Long" resultMap="SysRegistrResult">
         <include refid="selectSysRegistrVo"/>
-        where comp_id = #{compId} and del_flag = 0
+        where u.comp_id = #{compId} and u.del_flag = '0'
     </select>
 
     <insert id="insertSysRegistr" parameterType="SysRegistr">
@@ -72,13 +82,13 @@
             <if test="compId != null">comp_id,</if>
             <if test="userId != null">user_id,</if>
             <if test="deptId != null">dept_id,</if>
-            <if test="registrStatus != null and registrStatus != ''">registr_status,</if>
+            <if test="registrStatus != null">registr_status,</if>
             <if test="scoreCount != null">score_count,</if>
             <if test="materialUrl != null and materialUrl != ''">material_url,</if>
             <if test="compName != null and compName != ''">comp_name,</if>
             <if test="userName != null and userName != ''">user_name,</if>
             <if test="remark != null and remark != ''">remark,</if>
-            <if test="status != null and status != ''">status,</if>
+            <if test="status != null">status,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -90,14 +100,14 @@
             <if test="compId != null">#{compId},</if>
             <if test="userId != null">#{userId},</if>
             <if test="deptId != null">#{deptId},</if>
-            <if test="registrStatus != null and registrStatus != ''">#{registrStatus},</if>
+            <if test="registrStatus != null">#{registrStatus, jdbcType=CHAR},</if>
             <if test="scoreCount != null">#{scoreCount},</if>
             <if test="materialUrl != null and materialUrl != ''">#{materialUrl},</if>
             <if test="compName != null and compName != ''">#{compName},</if>
             <if test="userName != null and userName != ''">#{userName},</if>
             <if test="remark != null and remark != ''">#{remark},</if>
-            <if test="status != null and status != ''">#{status},</if>
-            <if test="delFlag != null">#{delFlag},</if>
+            <if test="status != null">#{status, jdbcType=CHAR},</if>
+            <if test="delFlag != null">#{delFlag, jdbcType=CHAR},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -111,14 +121,14 @@
             <if test="compId != null">comp_id = #{compId},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="deptId != null">dept_id = #{deptId},</if>
-            <if test="registrStatus != null and registrStatus != ''">registr_status = #{registrStatus},</if>
+            <if test="registrStatus != null">registr_status = #{registrStatus, jdbcType=CHAR},</if>
             <if test="scoreCount != null">score_count = #{scoreCount},</if>
             <if test="materialUrl != null and materialUrl != ''">material_url = #{materialUrl},</if>
             <if test="compName != null and compName != ''">comp_name = #{compName},</if>
             <if test="userName != null and userName != ''">user_name = #{userName},</if>
             <if test="remark != null and remark != ''">remark = #{remark},</if>
-            <if test="status != null and status != ''">status = #{status},</if>
-            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="status != null">status = #{status, jdbcType=CHAR},</if>
+            <if test="delFlag != null">del_flag = #{delFlag, jdbcType=CHAR},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
@@ -126,11 +136,11 @@
     </update>
 
     <delete id="deleteSysRegistrByRegistrId" parameterType="Long">
-        update sys_registr set del_flag = 2 where registr_id = #{registrId}
+        update sys_registr set del_flag = '2' where registr_id = #{registrId}
     </delete>
 
-    <delete id="deleteSysRegistrByRegistrIds" parameterType="String">
-        update sys_registr set del_flag = 2 where registr_id in
+    <delete id="deleteSysRegistrByRegistrIds" parameterType="java.util.List">
+        update sys_registr set del_flag = '2' where registr_id in
         <foreach item="registrId" collection="array" open="(" separator="," close=")">
             #{registrId}
         </foreach>

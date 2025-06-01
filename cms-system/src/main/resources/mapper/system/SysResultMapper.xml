@@ -8,20 +8,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="resultId"    column="result_id"    />
         <result property="compId"    column="comp_id"    />
         <result property="registrId"    column="registr_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="deptId"    column="dept_id"    />
+        <result property="userName"    column="user_name"    />
+        <result property="compName"    column="comp_name"    />
+        <result property="deptName"    column="dept_name"    />
         <result property="finalScore"    column="final_score"    />
+        <result property="rankNum"    column="rank_num"    />
+        <result property="awardLevel"    column="award_level"    />
         <result property="remark"    column="remark"    />
-        <result property="status"    column="status"    />
-        <result property="delFlag"    column="del_flag"    />
+        <result property="status"    column="status"  jdbcType="CHAR"  />
+        <result property="delFlag"    column="del_flag"  jdbcType="CHAR"  />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
-        <result property="userId"    column="user_id"    />
-        <result property="deptId"    column="dept_id"    />
     </resultMap>
 
     <sql id="selectSysResultVo">
-        select result_id, comp_id, registr_id, final_score, remark, status, del_flag, create_by, create_time, update_by, update_time, user_id, dept_id from sys_result
+        select result_id, comp_id, registr_id, user_id, dept_id, user_name, comp_name, dept_name, final_score, rank_num, award_level, remark, status, del_flag, create_by, create_time, update_by, update_time from sys_result
     </sql>
 
     <select id="selectSysResultList" parameterType="SysResult" resultMap="SysResultResult">
@@ -32,19 +37,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="registrId != null "> and registr_id = #{registrId}</if>
             <if test="userId != null "> and user_id = #{userId}</if>
             <if test="deptId != null "> and dept_id = #{deptId}</if>
-            and del_flag = 0
+            <if test="userName != null and userName != '' "> and user_name like concat('%', #{userName}, '%')</if>
+            <if test="compName != null and compName != '' "> and comp_name like concat('%', #{compName}, '%')</if>
+            <if test="deptName != null and deptName != '' "> and dept_name like concat('%', #{deptName}, '%')</if>
+            <if test="status != null"> and status = #{status, jdbcType=CHAR}</if>
+            and del_flag = '0'
         </where>
     </select>
     
     <select id="selectSysResultByResultId" parameterType="Long" resultMap="SysResultResult">
         <include refid="selectSysResultVo"/>
-        where result_id = #{resultId} and del_flag = 0
+        where result_id = #{resultId} and del_flag = '0'
     </select>
 
 
     <select id="selectSysResultByRegistrId" parameterType="Long" resultMap="SysResultResult">
         <include refid="selectSysResultVo"/>
-        where registr_id = #{registrId} and del_flag = 0
+        where registr_id = #{registrId} and del_flag = '0'
     </select>
 
     <!-- 根据报名编号列表查询成绩结果列表 -->
@@ -54,13 +63,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <foreach item="registrId" collection="list" open="(" separator="," close=")">
             #{registrId}
         </foreach>
-        and del_flag = 0
+        and del_flag = '0'
     </select>
 
     <!-- 根据用户ID和竞赛ID查询成绩结果 -->
     <select id="selectSysResultByUserIdAndCompId" parameterType="map" resultMap="SysResultResult">
         <include refid="selectSysResultVo"/>
-        where user_id = #{userId} and comp_id = #{compId} and del_flag = 0
+        where user_id = #{userId} and comp_id = #{compId} and del_flag = '0'
     </select>
 
     <insert id="insertSysResult" parameterType="SysResult">
@@ -69,31 +78,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="resultId != null">result_id,</if>
             <if test="compId != null">comp_id,</if>
             <if test="registrId != null">registr_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="userName != null and userName != ''">user_name,</if>
+            <if test="compName != null and compName != ''">comp_name,</if>
+            <if test="deptName != null and deptName != ''">dept_name,</if>
             <if test="finalScore != null">final_score,</if>
+            <if test="rankNum != null">rank_num,</if>
+            <if test="awardLevel != null and awardLevel != ''">award_level,</if>
             <if test="remark != null">remark,</if>
-            <if test="status != null and status != ''">status,</if>
-            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+            <if test="status != null">status,</if>
+            <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
-            <if test="userId != null">user_id,</if>
-            <if test="deptId != null">dept_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="resultId != null">#{resultId},</if>
             <if test="compId != null">#{compId},</if>
             <if test="registrId != null">#{registrId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="userName != null and userName != ''">#{userName},</if>
+            <if test="compName != null and compName != ''">#{compName},</if>
+            <if test="deptName != null and deptName != ''">#{deptName},</if>
             <if test="finalScore != null">#{finalScore,jdbcType=DOUBLE},</if>
+            <if test="rankNum != null">#{rankNum},</if>
+            <if test="awardLevel != null and awardLevel != ''">#{awardLevel},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="status != null and status != ''">#{status},</if>
-            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+            <if test="status != null">#{status,jdbcType=CHAR},</if>
+            <if test="delFlag != null">#{delFlag,jdbcType=CHAR},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
-            <if test="userId != null">#{userId},</if>
-            <if test="deptId != null">#{deptId},</if>
          </trim>
     </insert>
 
@@ -102,26 +121,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="compId != null">comp_id = #{compId},</if>
             <if test="registrId != null">registr_id = #{registrId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="userName != null and userName != ''">user_name = #{userName},</if>
+            <if test="compName != null and compName != ''">comp_name = #{compName},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
             <if test="finalScore != null">final_score = #{finalScore,jdbcType=DOUBLE},</if>
+            <if test="rankNum != null">rank_num = #{rankNum},</if>
+            <if test="awardLevel != null and awardLevel != ''">award_level = #{awardLevel},</if>
             <if test="remark != null">remark = #{remark},</if>
-            <if test="status != null and status != ''">status = #{status},</if>
-            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="status != null">status = #{status,jdbcType=CHAR},</if>
+            <if test="delFlag != null">del_flag = #{delFlag,jdbcType=CHAR},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
-            <if test="userId != null">user_id = #{userId},</if>
-            <if test="deptId != null">dept_id = #{deptId},</if>
         </trim>
         where result_id = #{resultId}
     </update>
 
-    <delete id="deleteSysResultByResultId" parameterType="Long">
-        update sys_result set del_flag = 2 where result_id = #{resultId}
+    <delete id="deleteSysResultByResultId" parameterType="java.lang.Long">
+        update sys_result set del_flag = '2' where result_id = #{resultId}
     </delete>
 
-    <delete id="deleteSysResultByResultIds" parameterType="String">
-        update sys_result set del_flag = 2 where result_id in
+    <delete id="deleteSysResultByResultIds" parameterType="java.util.List">
+        update sys_result set del_flag = '2' where result_id in
         <foreach item="resultId" collection="array" open="(" separator="," close=")">
             #{resultId}
         </foreach>

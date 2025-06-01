@@ -127,9 +127,21 @@ public interface SysUserMapper
      */
     public SysUser checkEmailUnique(String email);
 
-
-
     int isJudge(@Param("userId") Long userId);
 
+    /**
+     * 批量更新用户部门
+     *
+     * @param users 用户列表
+     * @return 更新的记录数
+     */
+    public int batchUpdateUserDept(List<SysUser> users);
 
+    /**
+     * 根据用户ID列表批量查询用户
+     *
+     * @param userIds 用户ID列表
+     * @return 用户列表
+     */
+    public List<SysUser> selectUsersByIds(List<Long> userIds);
 }

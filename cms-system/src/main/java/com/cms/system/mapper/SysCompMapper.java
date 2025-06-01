@@ -57,7 +57,7 @@ public interface SysCompMapper {
      * @param compIds 需要删除的数据主键集合
      * @return 结果
      */
-    int deleteSysCompByCompIds(Long[] compIds);
+    int deleteSysCompByCompIds(List<Long> compIds);
 
     /**
      * 查询热门竞赛ID列表
@@ -82,5 +82,12 @@ public interface SysCompMapper {
      */
     List<SysComp> selectUnassignedCompetitions(Long userId);
 
-}
+    /**
+     * 递增竞赛访问频率
+     *
+     * @param compId 竞赛ID
+     * @return 更新结果
+     */
+    int incrementAccessFrequency(Long compId);
 
+}

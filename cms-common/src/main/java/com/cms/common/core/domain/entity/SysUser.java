@@ -314,7 +314,7 @@ public class SysUser extends BaseEntity
     {
         return compIds;
     }
-    public void setCompIds(Long[] ompIds)
+    public void setCompIds(Long[] compIds)
     {
         this.compIds = compIds;
     }

@@ -55,7 +55,7 @@ public interface ISysCompService {
      * @param compIds 需要删除的竞赛信息主键集合
      * @return 结果
      */
-    public int deleteSysCompByCompIds(Long[] compIds) ;
+    public int deleteSysCompByCompIds(List<Long> compIds) ;
 
 
     /**
@@ -118,5 +118,12 @@ public interface ISysCompService {
      * @return 竞赛信息集合
      */
     public List<SysComp> selectUnassignedCompetitions(Long userId);
-}
 
+    /**
+     * 递增竞赛访问频率
+     *
+     * @param compId 竞赛ID
+     * @return 更新结果
+     */
+    int incrementAccessFrequency(Long compId);
+}

@@ -7,7 +7,7 @@ import com.cms.common.core.domain.entity.SysRegistr;
  * 报名信息Service接口
  * 
  * @author quoteZZZ
- * @date 2025-03-09
+ * @date 2025-05-26
  */
 public interface ISysRegistrService 
 {
@@ -49,7 +49,7 @@ public interface ISysRegistrService
      * @param registrIds 需要删除的报名信息主键集合
      * @return 结果
      */
-    public int deleteSysRegistrByRegistrIds(Long[] registrIds);
+    public int deleteSysRegistrByRegistrIds(List<Long> registrIds);
 
     /**
      * 删除报名信息信息

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -341,7 +340,9 @@ public class SysScoreServiceImpl implements ISysScoreService
                 return;
             }
 
-            BigDecimal finalScore = totalScore.divide(BigDecimal.valueOf(validScoreCount), 2, RoundingMode.HALF_UP);
+            Double finalScore = totalScore.divide(BigDecimal.valueOf(validScoreCount), 2, RoundingMode.HALF_UP)
+                    .doubleValue();
+
             logger.info("计算得到的平均分: {}, registrId: {}", finalScore, registrId);
 
             // 获取报名信息
@@ -450,10 +451,10 @@ public class SysScoreServiceImpl implements ISysScoreService
      */
     @Override
     @Transactional
-    public int deleteSysScoreByScoreIds(Long[] scoreIds) {
+    public int deleteSysScoreByScoreIds(List<Long> scoreIds) {
         logger.info("批量删除评分信息, scoreIds: {}", (Object) scoreIds);
         try {
-            if (scoreIds == null || scoreIds.length == 0) {
+            if (scoreIds == null || scoreIds.isEmpty()) {
                 logger.error("评分ID列表不能为空");
                 throw new IllegalArgumentException("评分ID列表不能为空");
             }
@@ -468,7 +469,7 @@ public class SysScoreServiceImpl implements ISysScoreService
             }
 
             // 使用分布式锁保证批量删除操作的原子性
-            String lockKey = "score:delete:batch:" + Arrays.toString(scoreIds);
+            String lockKey = "score:delete:batch:" + scoreIds.toString();
             RLock lock = redissonClient.getLock(lockKey);
             try {
                 if (lock.tryLock(10, 5, TimeUnit.SECONDS)) {

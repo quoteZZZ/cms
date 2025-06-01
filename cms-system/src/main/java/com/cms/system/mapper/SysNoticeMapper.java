@@ -44,7 +44,7 @@ public interface SysNoticeMapper
     public int updateNotice(SysNotice notice);
 
     /**
-     * 批量删除公告
+     * 删除公告
      * 
      * @param noticeId 公告ID
      * @return 结果

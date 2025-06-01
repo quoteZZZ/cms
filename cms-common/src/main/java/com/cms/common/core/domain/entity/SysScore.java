@@ -57,7 +57,7 @@ public class SysScore extends BaseEntity {
      */
     @Excel(name = "分数结果")
     @ApiModelProperty(value = "分数结果")
-    private Double score;
+    private Double score; // 修改为Double以匹配数据库中的double(5,2)类型
 
     /**
      * 评委名称
@@ -95,17 +95,24 @@ public class SysScore extends BaseEntity {
     private String comment;
 
     /**
+     * 备注
+     */
+    @Excel(name = "备注")
+    @ApiModelProperty(value = "备注：其他补充说明")
+    private String remark;
+
+    /**
      * 使用状态：0-正常，1-停用
      */
     @Excel(name = "使用状态", readConverterExp = "0=正常,1=停用")
     @ApiModelProperty(value = "使用状态：0-正常，1-停用")
-    private String status;
+    private Character status;
 
     /**
      * 删除标志：0-存在，2-已删除
      */
     @ApiModelProperty(value = "删除标志：0-存在，2-已删除")
-    private String delFlag;
+    private Character delFlag;
 
     /**
      * 用户ID

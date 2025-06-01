@@ -57,7 +57,7 @@ public class SysNoticeController extends BaseController
     public AjaxResult listCompetitionNotices(SysNotice notice)
     {
         // 只查询状态为正常的公告
-        notice.setStatus("0");
+        notice.setStatus('0'); // 0表示正常状态
         List<SysNotice> list = noticeService.selectNoticeList(notice);
         return success(list);
     }
@@ -71,11 +71,6 @@ public class SysNoticeController extends BaseController
     public AjaxResult add(@Validated @RequestBody SysNotice notice)
     {
         notice.setCreateBy(getUsername());
-        
-        // 如果提供的是字符串内容，转换为字节数组存储
-        if (notice.getNoticeContentString() != null && !notice.getNoticeContentString().isEmpty()) {
-            notice.setNoticeContent(notice.getNoticeContentString().getBytes(StandardCharsets.UTF_8));
-        }
         
         // 设置默认用户和部门ID
         if (notice.getUserId() == null) {
@@ -97,11 +92,7 @@ public class SysNoticeController extends BaseController
     public AjaxResult edit(@Validated @RequestBody SysNotice notice)
     {
         notice.setUpdateBy(getUsername());
-        
-        // 如果提供的是字符串内容，转换为字节数组存储
-        if (notice.getNoticeContentString() != null && !notice.getNoticeContentString().isEmpty()) {
-            notice.setNoticeContent(notice.getNoticeContentString().getBytes(StandardCharsets.UTF_8));
-        }
+
         
         return toAjax(noticeService.updateNotice(notice));
     }

@@ -130,7 +130,7 @@ public class SysScoreController extends BaseController {
     @DeleteMapping("/{scoreIds}")
     public R<Integer> remove(
             @ApiParam(value = "评分信息主键集合", required = true)
-            @PathVariable Long[] scoreIds) {
+            @PathVariable List<Long> scoreIds) {
         return R.ok(sysScoreService.deleteSysScoreByScoreIds(scoreIds));
     }
 

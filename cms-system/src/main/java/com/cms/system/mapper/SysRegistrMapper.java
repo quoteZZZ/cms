@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Param;
  * 报名信息Mapper接口
  * 
  * @author quoteZZZ
- * @date 2025-03-09
+ * @date 2025-05-26
  */
 public interface SysRegistrMapper 
 {
@@ -45,7 +45,6 @@ public interface SysRegistrMapper
      */
     public int insertSysRegistr(SysRegistr sysRegistr);
 
-    // 新增方法注释：根据竞赛ID查询参赛者列表
     /**
      * 根据竞赛ID查询参赛者列表
      * 
@@ -76,5 +75,5 @@ public interface SysRegistrMapper
      * @param registrIds 需要删除的数据主键集合
      * @return 结果
      */
-    public int deleteSysRegistrByRegistrIds(Long[] registrIds);
+    public int deleteSysRegistrByRegistrIds(List<Long> registrIds);
 }

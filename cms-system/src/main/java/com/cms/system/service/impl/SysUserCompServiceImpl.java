@@ -220,4 +220,22 @@ public class SysUserCompServiceImpl implements ISysUserCompService {
         }
         return 0;
     }
+
+    /**
+     * 判断用户是否已加入某竞赛
+     *
+     * @param userId 用户ID
+     * @param compId 竞赛ID
+     * @return 如果已加入则返回true，否则返回false
+     */
+    @Override
+    public boolean isUserJoinedCompetition(Long userId, Long compId) {
+        log.info("检查用户[{}]是否已加入竞赛[{}]", userId, compId);
+        if (userId == null || compId == null) {
+            throw new ServiceException("用户ID和竞赛ID不能为空");
+        }
+
+        List<Long> userCompIds = selectUserCompetitions(userId);
+        return userCompIds.contains(compId);
+    }
 }

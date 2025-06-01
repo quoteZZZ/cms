@@ -50,7 +50,7 @@ public interface ISysNoticeService
      * @return 结果
      */
     public int deleteNoticeById(Integer noticeId);
-    
+
     /**
      * 批量删除公告信息
      * 

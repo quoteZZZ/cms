@@ -9,14 +9,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="resultId"    column="result_id"    />
         <result property="registrId"    column="registr_id"    />
         <result property="judgeId"    column="judge_id"    />
-        <result property="score"    column="score"    />
+        <result property="score"    column="score"  jdbcType="DECIMAL"  />
         <result property="judgeName"    column="judge_name"    />
         <result property="userName"    column="user_name"    />
         <result property="compName"    column="comp_name"    />
         <result property="scoreTime"    column="score_time"    />
         <result property="comment"    column="comment"    />
-        <result property="status"    column="status"    />
-        <result property="delFlag"    column="del_flag"    />
+        <result property="status"    column="status"  jdbcType="CHAR"  />
+        <result property="delFlag"    column="del_flag"  jdbcType="CHAR"  />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -27,12 +27,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectSysScoreVo">
-        select score_id, result_id, registr_id, judge_id, score, judge_name, user_name, comp_name, score_time, comment, status, del_flag, create_by, create_time, update_by, update_time, remark, user_id, dept_id from sys_score
+        select score_id, result_id, registr_id, judge_id, user_id, dept_id, score, judge_name, user_name, comp_name, score_time, comment, status, del_flag, create_by, create_time, update_by, update_time, remark from sys_score
     </sql>
 
     <select id="selectSysScoreList" parameterType="SysScore" resultMap="SysScoreResult">
-        select s.score_id, s.result_id, s.registr_id, s.judge_id, s.score, s.judge_name, s.user_name, s.comp_name, s.score_time, s.comment, s.status, s.del_flag, s.create_by,
-               s.create_time, s.update_by, s.update_time, s.remark, s.user_id, s.dept_id
+        select s.score_id, s.result_id, s.registr_id, s.judge_id, s.user_id, s.dept_id, s.score, s.judge_name, s.user_name, s.comp_name, s.score_time, s.comment, s.status, s.del_flag, s.create_by,
+               s.create_time, s.update_by, s.update_time, s.remark
         from sys_score s
         <where>
             <if test="scoreId != null "> and s.score_id = #{scoreId}</if>
@@ -42,23 +42,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="score != null "> and s.score = #{score}</if>
             <if test="userId != null "> and s.user_id = #{userId}</if>
             <if test="deptId != null "> and s.dept_id = #{deptId}</if>
-            and s.del_flag = 0
+            <if test="status != null"> and s.status = #{status, jdbcType=CHAR}</if>
+            and s.del_flag = '0'
         </where>
     </select>
 
     <select id="selectSysScoreByScoreId" parameterType="Long" resultMap="SysScoreResult">
         <include refid="selectSysScoreVo"/>
-        where score_id = #{scoreId} and del_flag = 0
+        where score_id = #{scoreId} and del_flag = '0'
     </select>
 
     <select id="selectAllScores" resultMap="SysScoreResult">
         <include refid="selectSysScoreVo"/>
-        WHERE del_flag = 0
+        WHERE del_flag = '0'
     </select>
 
     <select id="selectAllScoresWithRegistrId" resultMap="SysScoreResult">
         <include refid="selectSysScoreVo"/>
-        WHERE del_flag = 0
+        WHERE del_flag = '0'
     </select>
 
     <!-- 根据竞赛ID查询所有评分 -->
@@ -80,22 +81,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 根据报名ID查询评分 -->
     <select id="selectScoresByRegistrId" parameterType="Long" resultMap="SysScoreResult">
         <include refid="selectSysScoreVo"/>
-        WHERE registr_id = #{registrId} AND del_flag = 0
+        WHERE registr_id = #{registrId} AND del_flag = '0'
     </select>
 
     <insert id="insertSysScore" parameterType="SysScore">
         insert into sys_score
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="scoreId != null">score_id,</if>
+            <if test="resultId != null">result_id,</if>
             <if test="registrId != null">registr_id,</if>
             <if test="judgeId != null">judge_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="deptId != null">dept_id,</if>
             <if test="score != null">score,</if>
             <if test="judgeName != null and judgeName != ''">judge_name,</if>
             <if test="userName != null and userName != ''">user_name,</if>
             <if test="compName != null and compName != ''">comp_name,</if>
             <if test="scoreTime != null">score_time,</if>
             <if test="comment != null">comment,</if>
-            <if test="status != null and status != ''">status,</if>
+            <if test="status != null">status,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -104,16 +108,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="scoreId != null">#{scoreId},</if>
+            <if test="resultId != null">#{resultId},</if>
             <if test="registrId != null">#{registrId},</if>
             <if test="judgeId != null">#{judgeId},</if>
-            <if test="score != null">#{score},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="score != null">#{score, jdbcType=DECIMAL},</if>
             <if test="judgeName != null and judgeName != ''">#{judgeName},</if>
             <if test="userName != null and userName != ''">#{userName},</if>
             <if test="compName != null and compName != ''">#{compName},</if>
             <if test="scoreTime != null">#{scoreTime},</if>
             <if test="comment != null">#{comment},</if>
-            <if test="status != null and status != ''">#{status},</if>
-            <if test="delFlag != null">#{delFlag},</if>
+            <if test="status != null">#{status, jdbcType=CHAR},</if>
+            <if test="delFlag != null">#{delFlag, jdbcType=CHAR},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -124,16 +131,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateSysScore" parameterType="SysScore">
         update sys_score
         <trim prefix="SET" suffixOverrides=",">
+            <if test="resultId != null">result_id = #{resultId},</if>
             <if test="registrId != null">registr_id = #{registrId},</if>
             <if test="judgeId != null">judge_id = #{judgeId},</if>
-            <if test="score != null">score = #{score},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="score != null">score = #{score, jdbcType=DECIMAL},</if>
             <if test="judgeName != null and judgeName != ''">judge_name = #{judgeName},</if>
             <if test="userName != null and userName != ''">user_name = #{userName},</if>
             <if test="compName != null and compName != ''">comp_name = #{compName},</if>
             <if test="scoreTime != null">score_time = #{scoreTime},</if>
             <if test="comment != null">comment = #{comment},</if>
-            <if test="status != null and status != ''">status = #{status},</if>
-            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="status != null">status = #{status, jdbcType=CHAR},</if>
+            <if test="delFlag != null">del_flag = #{delFlag, jdbcType=CHAR},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -143,11 +153,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteSysScoreByScoreId" parameterType="Long">
-        update sys_score set del_flag = 2 where score_id = #{scoreId}
+        update sys_score set del_flag = '2' where score_id = #{scoreId}
     </delete>
 
-    <delete id="deleteSysScoreByScoreIds" parameterType="String">
-        update sys_score set del_flag = 2 where score_id in
+    <delete id="deleteSysScoreByScoreIds" parameterType="java.util.List">
+        update sys_score set del_flag = '2' where score_id in
         <foreach item="scoreId" collection="array" open="(" separator="," close=")">
             #{scoreId}
         </foreach>
