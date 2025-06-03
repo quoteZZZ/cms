@@ -81,13 +81,22 @@ public class SysCompController extends BaseController {
 @ApiOperation("查询竞赛信息列表")
 @PreAuthorize("@ss.hasPermi('system:comp:list')")
 @GetMapping("/list")
-public R<List<SysComp>> list(
+public TableDataInfo list(
         @ApiParam(value = "竞赛信息查询条件") SysComp sysComp) {
     startPage();
     //打印查询条件
     logger.info("查询条件：{}", sysComp);
     List<SysComp> list = sysCompService.selectSysCompList(sysComp, "comp_id DESC");
-    return R.ok(list);
+
+    //再次筛选list中（竞赛状态和竞赛阶段存在的竞赛）根据前端的条件查询
+    if (sysComp.getCompStatus() != null || sysComp.getStageStatus() != null) {
+        list = list.stream()
+                .filter(comp -> (sysComp.getCompStatus() == null || comp.getCompStatus().equals(sysComp.getCompStatus())) &&
+                                (sysComp.getStageStatus() == null || comp.getStageStatus().equals(sysComp.getStageStatus())))
+                .collect(Collectors.toList());
+    }
+
+    return getDataTable(list);
 }
 
 /**
@@ -394,6 +403,9 @@ public R<SysComp> getInfo(
 
     /**
      * 批量选择用户授权
+     *
+     * @param request 包含竞赛ID和用户ID列表的请求参数
+     * @return 授权结果，包含成功授权的用户数量
      */
     @ApiOperation("批量选择用户授权")
     @PreAuthorize("@ss.hasPermi('system:comp:edit')")
@@ -406,12 +418,18 @@ public R<SysComp> getInfo(
         Long compId = request.getCompId();
         Long[] userIds = request.getUserIds();
 
-        logger.info("批量选择用户授权, 竞赛ID: {}, 用户数量: {}", compId, userIds != null ? userIds.length : 0);
+        logger.info("批量选择用户授权, 竞赛ID: {}, 用户信息: {}", compId, request);
 
         // 参数校验
         if (compId == null) {
             logger.warn("批量选择用户授权失败: 竞赛ID为空");
             return R.fail("竞赛ID不能为空");
+        }
+
+        // 处理只有一个用户ID的情况
+        if (userIds == null && request.getUserId() != null) {
+            userIds = new Long[]{request.getUserId()};
+            logger.info("转换单个用户ID为数组, 用户ID: {}", request.getUserId());
         }
 
         if (userIds == null || userIds.length == 0) {
@@ -465,6 +483,7 @@ public R<SysComp> getInfo(
     public static class AuthUserRequest {
         private Long compId;
         private Long[] userIds;
+        private Long userId;
 
         public Long getCompId() {
             return compId;
@@ -480,6 +499,14 @@ public R<SysComp> getInfo(
 
         public void setUserIds(Long[] userIds) {
             this.userIds = userIds;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public void setUserId(Long userId) {
+            this.userId = userId;
         }
     }
 }

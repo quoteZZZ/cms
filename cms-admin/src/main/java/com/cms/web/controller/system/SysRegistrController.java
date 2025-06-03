@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
+
+import com.cms.common.core.page.TableDataInfo;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -40,31 +42,31 @@ import com.cms.common.exception.ServiceException;
 @RestController
 @RequestMapping("/system/registr")
 public class SysRegistrController extends BaseController {
-    
+
     @Autowired
     private ISysRegistrService sysRegistrService;
-    
+
     @Autowired
     private ISysCompService sysCompService;
-    
+
     @Autowired
     private TokenService tokenService;
-    
+
     private static final Logger log = LoggerFactory.getLogger(SysRegistrController.class);
-    
+
     /**
      * 查询报名信息列表
      */
     @ApiOperation("查询报名信息列表")
     @PreAuthorize("@ss.hasPermi('system:registr:list')")
     @GetMapping("/list")
-    public R<List<SysRegistr>> list(
+    public TableDataInfo list(
             @ApiParam(value = "报名信息查询条件") SysRegistr sysRegistr) {
         startPage();
         List<SysRegistr> list = sysRegistrService.selectSysRegistrList(sysRegistr);
-        return R.ok(list);
+        return getDataTable(list);
     }
-    
+
     /**
      * 导出报名信息列表
      */
@@ -79,7 +81,7 @@ public class SysRegistrController extends BaseController {
         ExcelUtil<SysRegistr> util = new ExcelUtil<>(SysRegistr.class);
         util.exportExcel(response, list, "报名信息数据");
     }
-    
+
     /**
      * 获取报名信息详细信息
      */
@@ -91,7 +93,7 @@ public class SysRegistrController extends BaseController {
             @PathVariable("registrId") Long registrId) {
         return R.ok(sysRegistrService.selectSysRegistrByRegistrId(registrId));
     }
-    
+
     /**
      * 新增报名信息
      */
@@ -106,7 +108,7 @@ public class SysRegistrController extends BaseController {
         sysRegistr.setCreateBy(getUsername());
         return R.ok(sysRegistrService.insertSysRegistr(sysRegistr));
     }
-    
+
     /**
      * 修改报名信息
      */
@@ -119,7 +121,7 @@ public class SysRegistrController extends BaseController {
             @RequestBody SysRegistr sysRegistr) {
         return R.ok(sysRegistrService.updateSysRegistr(sysRegistr));
     }
-    
+
     /**
      * 更新报名状态
      */
@@ -156,7 +158,7 @@ public class SysRegistrController extends BaseController {
             @PathVariable("registrId") Long registrId) {
         return R.ok(sysRegistrService.deleteSysRegistrByRegistrId(registrId));
     }
-    
+
     /**
      * 批量删除报名信息
      */
@@ -167,6 +169,6 @@ public class SysRegistrController extends BaseController {
     public R<Integer> batchDelete(@RequestBody List<Long> registrIds) {
         return R.ok(sysRegistrService.deleteSysRegistrByRegistrIds(registrIds));
     }
-    
+
 
 }

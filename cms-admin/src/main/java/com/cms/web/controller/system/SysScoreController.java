@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.cms.common.annotation.Log;
 import com.cms.common.core.controller.BaseController;
+import com.cms.common.core.page.TableDataInfo;
 import com.cms.common.enums.BusinessType;
 import com.cms.common.core.domain.entity.SysScore;
 import com.cms.common.core.domain.entity.SysUser;
@@ -61,11 +62,11 @@ public class SysScoreController extends BaseController {
     @ApiOperation("查询评分信息列表")
     @PreAuthorize("@ss.hasPermi('system:score:list')")
     @GetMapping("/list")
-    public R<List<SysScore>> list(
+    public TableDataInfo list(
             @ApiParam(value = "评分信息查询条件") SysScore sysScore) {
         startPage();
         List<SysScore> list = sysScoreService.selectSysScoreList(sysScore);
-        return R.ok(list);
+        return getDataTable(list);
     }
 
     /**
@@ -137,3 +138,4 @@ public class SysScoreController extends BaseController {
 
 
 }
+

@@ -53,4 +53,19 @@ public interface SysUserCompMapper
      * @return 结果
      */
     public int deleteUserCompInfos(@Param("compId") Long compId, @Param("userIds") Long[] userIds);
+
+    /**
+     * 检查用户是否已授权特定竞赛
+     * @param userId 用户ID
+     * @param compId 竞赛ID
+     * @return 结果数量
+     */
+    public int checkUserCompExists(@Param("userId") Long userId, @Param("compId") Long compId);
+
+    /**
+     * 查询已被授权特定竞赛的所有用户ID列表
+     * @param compId 竞赛ID
+     * @return 用户ID列表
+     */
+    public List<Long> selectUserIdsByCompId(Long compId);
 }

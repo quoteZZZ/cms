@@ -298,6 +298,7 @@ public class SysCompServiceImpl implements ISysCompService {
      * 3. 使用分布式锁防止击穿
      * 4. 随机TTL防止缓存雪崩
      * 5. 性能监控与日志记录
+     * 6. 保留分页信息以修复分页问题
      *
      * @param sysComp 竞赛信息查询条件
      * @param order 排序参数
@@ -310,6 +311,19 @@ public class SysCompServiceImpl implements ISysCompService {
         boolean isCacheHit = true;
 
         try {
+            // 获取当前线程的分页信息
+            com.github.pagehelper.Page<Object> page = com.github.pagehelper.PageHelper.getLocalPage();
+            boolean isPaging = page != null;
+
+            if (isPaging) {
+                // 如果启用了分页，则直接查询数据库以确保分页正确
+                logger.debug("检测到分页请求，跳过缓存直接查询数据库，页码: {}, 每页大小: {}",
+                        page.getPageNum(), page.getPageSize());
+                List<SysComp> result = sysCompMapper.selectSysCompList(sysComp, order);
+                return result != null ? result : Collections.emptyList();
+            }
+
+            // 如果未分页，走原有缓存逻辑
             // 如果 order 为空，默认按 comp_id 排序
             if (order == null || order.isEmpty()) {
                 order = "comp_id DESC";

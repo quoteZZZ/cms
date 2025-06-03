@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import com.cms.common.core.domain.entity.SysUser;
+import com.cms.common.core.page.TableDataInfo;
 import com.cms.common.exception.ServiceException;
 import com.cms.common.utils.ServletUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -64,11 +65,11 @@ public class SysResultController extends BaseController {
     @ApiOperation("查询成绩结果列表")
     @PreAuthorize("@ss.hasPermi('system:result:list')")
     @GetMapping("/list")
-    public R<List<SysResult>> list(
+    public TableDataInfo list(
             @ApiParam(value = "成绩结果查询条件") SysResult sysResult) {
         startPage();
         List<SysResult> list = sysResultService.selectSysResultList(sysResult);
-        return R.ok(list);
+        return getDataTable(list);
     }
 
     /**

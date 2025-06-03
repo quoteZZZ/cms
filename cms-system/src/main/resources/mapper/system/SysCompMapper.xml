@@ -33,6 +33,46 @@
         from sys_comp
     </sql>
 
+    <!-- 统计符合条件的竞赛记录数 -->
+    <select id="selectCountByCondition" parameterType="SysComp" resultType="int">
+        select count(1) from sys_comp
+        <where>
+            <!-- compId非空时加入条件 -->
+            <if test="compId != null and compId != ''">
+                AND comp_id LIKE CONCAT('%', TRIM(#{compId}), '%')
+            </if>
+            <if test="deptId != null">
+                AND dept_id = #{deptId}
+            </if>
+
+            <!-- compName非空时加入条件 -->
+            <if test="compName != null and compName != ''">
+                AND comp_name LIKE CONCAT('%', TRIM(#{compName}), '%')
+            </if>
+
+            <if test="compMode != null">
+                AND comp_mode = #{compMode}
+            </if>
+
+            <!-- compCategory非空时加入条件 -->
+            <if test="compCategory != null">
+                AND comp_category = #{compCategory}
+            </if>
+
+            <!-- compStatus非空时加入条件 -->
+            <if test="compStatus != null">
+                AND comp_status = #{compStatus}
+            </if>
+
+            <!-- status非空时加入条件 -->
+            <if test="status != null">
+                AND status = #{status, jdbcType=CHAR}
+            </if>
+            <!-- 删除标志始终为0 -->
+            AND del_flag = 0
+        </where>
+    </select>
+
     <select id="selectSysCompList" parameterType="SysComp" resultMap="SysCompResult">
         <include refid="selectSysCompVo"/>
         <where>
@@ -54,9 +94,19 @@
                 AND comp_category = #{sysComp.compCategory, jdbcType=CHAR}
             </if>
 
+            <!-- 添加compMode条件判断 -->
+            <if test="sysComp.compMode != null">
+                AND comp_mode = #{sysComp.compMode, jdbcType=CHAR}
+            </if>
+
             <!-- compStatus非空时加入条件 -->
             <if test="sysComp.compStatus != null">
                 AND comp_status = #{sysComp.compStatus, jdbcType=CHAR}
+            </if>
+
+            <!-- stageStatus非空时加入条件 -->
+            <if test="sysComp.stageStatus != null">
+                AND stage_status = #{sysComp.stageStatus}
             </if>
 
             <!-- status非空时加入条件 -->
@@ -74,8 +124,6 @@
             ORDER BY comp_id DESC
         </if>
     </select>
-
-
 
     <select id="selectSysCompByCompId" parameterType="Long" resultMap="SysCompResult">
         <include refid="selectSysCompVo"/>

@@ -1,6 +1,7 @@
 package com.cms.system.mapper;
 
 import com.cms.common.core.domain.entity.SysUserRole;
+import com.cms.common.core.domain.entity.SysRole;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -70,4 +71,12 @@ public interface SysUserRoleMapper
      * @return 是评委角色返回1，否则返回0
      */
     int isJudge(Long userId);
+
+    /**
+     * 根据用户ID查询用户所属角色列表
+     *
+     * @param userId 用户ID
+     * @return 角色列表
+     */
+    List<SysRole> selectRolesByUserId(Long userId);
 }

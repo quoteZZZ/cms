@@ -141,7 +141,7 @@
 
     <delete id="deleteSysRegistrByRegistrIds" parameterType="java.util.List">
         update sys_registr set del_flag = '2' where registr_id in
-        <foreach item="registrId" collection="array" open="(" separator="," close=")">
+        <foreach item="registrId" collection="list" open="(" separator="," close=")">
             #{registrId}
         </foreach>
     </delete>

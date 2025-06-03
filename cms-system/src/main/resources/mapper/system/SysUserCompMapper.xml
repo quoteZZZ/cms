@@ -41,4 +41,9 @@
             #{userId}
         </foreach>
     </delete>
+
+    <select id="checkUserCompExists" resultType="Integer">
+        select count(1) from sys_user_comp where user_id = #{userId} and comp_id = #{compId}
+    </select>
 </mapper>
+

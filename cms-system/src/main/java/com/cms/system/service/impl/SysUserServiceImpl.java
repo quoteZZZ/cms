@@ -2,8 +2,7 @@ package com.cms.system.service.impl;
 
 import com.cms.common.annotation.DataScope;
 import com.cms.common.constant.UserConstants;
-import com.cms.common.core.domain.entity.SysRole;
-import com.cms.common.core.domain.entity.SysUser;
+import com.cms.common.core.domain.entity.*;
 import com.cms.common.exception.ServiceException;
 import com.cms.common.redis.RedisCacheUtil;
 import com.cms.common.utils.SecurityUtils;
@@ -11,9 +10,6 @@ import com.cms.common.utils.StringUtils;
 import com.cms.common.utils.bean.BeanValidators;
 import com.cms.common.utils.spring.SpringUtils;
 import com.cms.common.utils.uuid.IdGenerator;
-import com.cms.common.core.domain.entity.SysPost;
-import com.cms.common.core.domain.entity.SysUserPost;
-import com.cms.common.core.domain.entity.SysUserRole;
 import com.cms.system.mapper.*;
 import com.cms.system.service.ISysConfigService;
 import com.cms.system.service.ISysDeptService;
@@ -43,8 +39,7 @@ import com.cms.common.constant.CacheConstants;
  * @author quoteZZZ
  */
 @Service
-public class SysUserServiceImpl implements ISysUserService
-{
+public class SysUserServiceImpl implements ISysUserService {
     // 日志对象
     private static final Logger log = LoggerFactory.getLogger(SysUserServiceImpl.class);
 
@@ -55,10 +50,10 @@ public class SysUserServiceImpl implements ISysUserService
     private SysRoleMapper roleMapper;// 角色数据层
 
     @Autowired
-    private SysPostMapper postMapper;// 岗位数据层
+    private SysUserRoleMapper userRoleMapper; // 用户和角色关联数据层
 
     @Autowired
-    private SysUserRoleMapper userRoleMapper;// 用户和角色关联数据层
+    private SysPostMapper postMapper;// 岗位数据层
 
     @Autowired
     private SysUserPostMapper userPostMapper;// 用户和岗位关联数据层
@@ -98,6 +93,225 @@ public class SysUserServiceImpl implements ISysUserService
     // 定义日志记录器
     Logger logger = LoggerFactory.getLogger(SysUserServiceImpl.class);
 
+
+
+
+
+    /**
+     * 根据条件分页查询已分配评委竞赛列表
+     *
+     * @param user 用户信息
+     * @return 用户信息集合信息
+     */
+    @Override
+    @DataScope(deptAlias = "d", userAlias = "u")// 数据权限注解（d表示限定部门查询，u表示限定用户查询)
+    public List<SysUser> selectAllocatedJudgeList(SysUser user) {
+        List<SysUser> userList = userMapper.selectAllocatedJudgeList(user);
+
+        // 补全用户信息：角色、竞赛、判断是否为评委
+        return fillUserInfo(userList);
+    }
+
+    /**
+     * 根据条件分页查询未分配评委竞赛列表
+     *
+     * @param user 用户信息
+     * @return 用户信息集合信息
+     */
+    @Override
+    @DataScope(deptAlias = "d", userAlias = "u")// 数据权限注解（d表示限定部门查询，u表示限定用户查询)
+    public List<SysUser> selectUnallocatedJudgeList(SysUser user) {
+        List<SysUser> userList = userMapper.selectUnallocatedJudgeList(user);
+
+        // 补全用户信息：角色、竞赛、判断是否为评委
+        return fillUserInfo(userList);
+    }
+
+    /**
+     * 填充用户信息
+     * 补全用户角色、竞赛信息，并标记是否为评委
+     *
+     * @param userList 用户列表
+     * @return 补全信息后的用户列表
+     */
+    private List<SysUser> fillUserInfo(List<SysUser> userList) {
+        if (userList == null || userList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            // 遍历每个用户，补全信息
+            for (SysUser user : userList) {
+                if (user == null || user.getUserId() == null) {
+                    continue;
+                }
+
+                // 1. 补全角色信息
+                if (user.getRoles() == null || user.getRoles().isEmpty()) {
+                    List<SysRole> roles = userRoleMapper.selectRolesByUserId(user.getUserId());
+                    user.setRoles(roles);
+
+                    // 根据角色列表设置roleId（取第一个角色的ID）
+                    if (roles != null && !roles.isEmpty()) {
+                        user.setRoleId(roles.get(0).getRoleId());
+                    }
+                }
+
+                // 2. 补全竞赛信息
+                if (user.getComps() == null || user.getComps().isEmpty()) {
+                    // 获取用户参与的竞赛
+                    List<Long> compIds = userCompService.selectUserCompetitions(user.getUserId());
+                    if (!compIds.isEmpty()) {
+                        List<SysComp> comps = new ArrayList<>();
+                        for (Long compId : compIds) {
+                            SysComp comp = sysCompMapper.selectSysCompByCompId(compId);
+                            if (comp != null) {
+                                comps.add(comp);
+                            }
+                        }
+                        user.setComps(comps);
+                    }
+                }
+
+                // 3. 判断用户是否为评委
+                boolean isJudge = isJudge(user.getUserId());
+                // 在SysUser类中没有直接的judge字段，但前端用到了，因此需要通过角色信息判断
+                for (SysRole role : user.getRoles()) {
+                    if (role.getRoleId() == 3L) {  // 评委角色ID为3
+                        user.setRoleId(3L);  // 设置roleId
+                        break;
+                    }
+                }
+            }
+
+            return userList;
+        } catch (Exception e) {
+            logger.error("补全用户信息失败", e);
+            return userList; // 发生异常时返回原始列表
+        }
+    }
+
+    /**
+     * 判断用户是否为评委
+     *
+     * @param userId 用户ID
+     * @return 如果是评委返回true，否则返回false
+     */
+    @Override
+    public boolean isJudge(Long userId) {
+        try {
+            // 从缓存中获取结果
+            String cacheKey = CacheConstants.USER_JUDGE_KEY + userId;
+            Boolean cached = redisCacheUtil.getCacheObject(cacheKey);
+            if (cached != null) {
+                return cached;
+            }
+
+            // 缓存未命中，查询数据库
+            int result = userMapper.isJudge(userId);
+            boolean isJudge = result > 0;
+
+            // 将结果存入缓存，设置1小时过期时间
+            redisCacheUtil.setCacheObject(cacheKey, isJudge, 3600, TimeUnit.SECONDS);
+
+            return isJudge;
+        } catch (Exception e) {
+            logger.error("判断用户是否为评委失败, userId: {}", userId, e);
+
+            // 异常情况回退到手动判断角色的方式
+            List<SysRole> roles = userRoleMapper.selectRolesByUserId(userId);
+            if (roles != null) {
+                for (SysRole role : roles) {
+                    if (role.getRoleId() == 3L) {  // 评委角色ID为3
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+
+
+    /**
+     * 查询所有评委用户
+     *
+     * @return 评委用户列表
+     */
+    @Override
+    public List<SysUser> selectJudges() {
+        try {
+            // 构造查询条件
+            SysUser queryParam = new SysUser();
+            List<SysUser> allUsers = userMapper.selectUserList(queryParam);
+
+            // 筛选出评委用户
+            List<SysUser> judges = allUsers.stream()
+                .filter(user -> isJudge(user.getUserId()))
+                .collect(Collectors.toList());
+
+            // 补全用户信息
+            return fillUserInfo(judges);
+        } catch (Exception e) {
+            logger.error("查询评委用户列表失败", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 通过用户ID查询用户
+     *
+     * @param userId 用户ID
+     * @return 用户对象信息
+     */
+    @Override
+    public SysUser selectUserById(Long userId) {
+        if (userId == null) {
+            log.warn("用户ID为空，无法查询用户信息");
+            return null;
+        }
+        try {
+            SysUser user = userMapper.selectUserById(userId);
+            if (user == null) {
+                log.warn("ID为{}的用户信息不存在", userId);
+            }
+            return user;
+        } catch (Exception e) {
+            logger.error("查询用户信息失败, userId: {}", userId, e);
+            return null;
+        }
+    }
+
+    @Override
+    public int batchUpdateUserDept(List<SysUser> users) {
+        if (CollectionUtils.isEmpty(users)) {
+            return 0;
+        }
+        return userMapper.batchUpdateUserDept(users);
+    }
+
+    @Override
+    public List<SysUser> selectUsersByIds(List<Long> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return new ArrayList<>();
+        }
+        return userMapper.selectUsersByIds(userIds);
+    }
+
+    @Override
+    public String selectUserRoleGroup(String userName) {
+        SysUser user =  userMapper.selectUserByUserName(userName);
+        if (user != null) {
+            List<SysRole> roles = userRoleMapper.selectRolesByUserId(user.getUserId());
+            if (roles != null && !roles.isEmpty()) {
+                return roles.stream()
+                        .map(SysRole::getRoleKey)
+                        .collect(Collectors.joining(","));
+            }
+        }
+        return StringUtils.EMPTY;
+    }
+
     /**
      * 根据条件分页查询用户列表
      * @param user 用户信息
@@ -135,85 +349,19 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 根据条件分页查询已分配评委竞赛列表
-     *
-     * @param user 用户信息
-     * @return 用户信息集合信息
-     */
-    @Override
-    @DataScope(deptAlias = "d", userAlias = "u")// 数据权限注解（d表示限定部门查询，u表示限定用户查询)
-    public List<SysUser> selectAllocatedJudgeList(SysUser user)
-    {
-        return userMapper.selectAllocatedJudgeList(user);
-    }
-
-    /**
-     * 根据条件分页查询未分配评委竞赛列表
-     *
-     * @param user 用户信息
-     * @return 用户信息集合信息
-     */
-    @Override
-    @DataScope(deptAlias = "d", userAlias = "u")// 数据权限注解（d表示限定部门查询，u表示限定用户查询)
-    public List<SysUser> selectUnallocatedJudgeList(SysUser user)
-    {
-        return userMapper.selectUnallocatedJudgeList(user);
-    }
-
-
-
-    /**
      * 通过用户名查询用户
-     */
-    @Override
-    public SysUser selectUserByUserName(String userName) {
-        if (StringUtils.isEmpty(userName)) {
-            log.warn("用户名为空，无法查询用户信息");
-            return null;
-        }
-        SysUser user = userMapper.selectUserByUserName(userName);
-        if (user == null) {
-            log.warn("用户名={} 的用户信息不存在", userName);
-        }
-        return user;
-    }
-
-    /**
-     * 通过用户ID查询用户
-     */
-    @Override
-    public SysUser selectUserById(Long userId) {
-        if (userId == null || userId <= 0) {
-            log.warn("用户ID为空或无效，无法查询用户信息");
-            return null;
-        }
-        SysUser user = userMapper.selectUserById(userId);
-        if (user == null) {
-            log.warn("用户ID={} 的用户信息不存在", userId);
-        }
-        return user;
-    }
-
-    /**
-     * 查询用户所属角色组
      * @param userName 用户名
-     * @return 结果
+     * @return 用户对象信息
      */
     @Override
-    public String selectUserRoleGroup(String userName) {
-        if (StringUtils.isEmpty(userName)) {
-            log.warn("用户名为空，无法查询用户角色组");
-            return StringUtils.EMPTY;
-        }
-        List<SysRole> list = roleMapper.selectRolesByUserName(userName);
-        if (CollectionUtils.isEmpty(list)) {
-            log.info("用户 {} 没有分配任何角色", userName);
-            return StringUtils.EMPTY; // 返回空字符串而不是 null
-        }
-        return list.stream()
-                .map(SysRole::getRoleName)
-                .collect(Collectors.joining(","));
+    public SysUser selectUserByUserName(String userName)
+    {
+        return userMapper.selectUserByUserName(userName);
     }
+
+
+
+
 
     /**
      * 查询用户所属岗位组
@@ -221,19 +369,14 @@ public class SysUserServiceImpl implements ISysUserService
      * @return 结果
      */
     @Override
-    public String selectUserPostGroup(String userName) {
-        if (StringUtils.isEmpty(userName)) {
-            log.warn("用户名为空，无法查询用户岗位组");
+    public String selectUserPostGroup(String userName)
+    {
+        List<SysPost> list = postMapper.selectPostsByUserName(userName);
+        if (CollectionUtils.isEmpty(list))
+        {
             return StringUtils.EMPTY;
         }
-        List<SysPost> list = postMapper.selectPostsByUserName(userName);
-        if (CollectionUtils.isEmpty(list)) {
-            log.info("用户 {} 没有分配任何岗位", userName);
-            return StringUtils.EMPTY; // 返回空字符串而不是 null
-        }
-        return list.stream()
-                .map(SysPost::getPostName)
-                .collect(Collectors.joining(","));
+        return list.stream().map(SysPost::getPostName).collect(Collectors.joining(","));
     }
 
     /**
@@ -302,16 +445,19 @@ public class SysUserServiceImpl implements ISysUserService
 
     /**
      * 校验用户是否有数据权限
+     * @param userId 用户id
      */
     @Override
-    public void checkUserDataScope(Long userId) {
-        if (!SysUser.isAdmin(SecurityUtils.getUserId())) {
+    public void checkUserDataScope(Long userId)
+    {
+        if (!SysUser.isAdmin(SecurityUtils.getUserId()))
+        {
             SysUser user = new SysUser();
             user.setUserId(userId);
             List<SysUser> users = SpringUtils.getAopProxy(this).selectUserList(user);
-            if (StringUtils.isEmpty(users)) {
-                log.error("没有权限访问用户数据！");
-                //throw new ServiceException("没有权限访问用户数据！");
+            if (StringUtils.isEmpty(users))
+            {
+                throw new ServiceException("没有权限访问用户数据！");
             }
         }
     }
@@ -325,8 +471,6 @@ public class SysUserServiceImpl implements ISysUserService
     @Transactional
     public int insertUser(SysUser user)
     {
-        //获得唯一id,设置到对象中
-        user.setUserId(IdGenerator.generateId(0));
         // 新增用户信息
         int rows = userMapper.insertUser(user);
         // 新增用户岗位关联
@@ -337,22 +481,15 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 注册用户信息，默认角色为参赛者:4L
+     * 注册用户信息
      * @param user 用户信息
      * @return 结果
      */
     @Override
     public boolean registerUser(SysUser user)
     {
-        //获得唯一id,设置到对象中
-        user.setUserId(IdGenerator.generateId(0));
-        Boolean total = userMapper.insertUser(user) > 0; //这个是插入到用户表中
-        //插入到角色表中，然后注意一下这个new Long[]{4L}，4L代表的含义是2是xx角色的id，L是Long长整型，这个样子是写死的，所有注册的权限是参赛者角色权限。
-        insertUserRole(userMapper.selectUserByUserName(user.getUserName()).getUserId(),new Long[]{4L});
-        return total;
-        //return userMapper.insertUser(user) > 0; 原本存在的，可以删掉可以注释掉
+        return userMapper.insertUser(user) > 0;
     }
-
 
     /**
      * 修改保存用户信息
@@ -606,99 +743,5 @@ public class SysUserServiceImpl implements ISysUserService
             successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
         }
         return successMsg.toString();
-    }
-
-    /**
-     * 获取所有评委用户列表（角色ID为3的用户）
-     * @return 评委用户集合
-     */
-    @Override
-    public List<SysUser> selectJudges() {
-        // 获取所有用户（根据业务需求可优化为分页查询）
-        List<SysUser> allUsers = this.selectUserList(new SysUser());
-        return allUsers.stream()
-                .filter(user -> isJudge(user.getUserId())) // 调用 isJudge 方法过滤
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 判断用户是否为评委
-     *
-     * @param userId 用户ID
-     * @return 是否为评委
-     */
-    @Override
-    public boolean isJudge(Long userId) {
-        if (userId == null) {
-            return false;
-        }
-
-        try {
-            // 这里假设评委角色ID为3，直接查询数据库
-            int count = userRoleMapper.isJudge(userId);
-            return count > 0;
-        } catch (Exception e) {
-            log.error("判断用户是否为评委失败，userId: {}", userId, e);
-            // 发生异常时返回默认值：非评委
-            return false;
-        }
-    }
-
-    /**
-     * 批量更新用户部门
-     *
-     * @param users 用户列表
-     * @return 更新的记录数
-     */
-    @Override
-    @Transactional
-    public int batchUpdateUserDept(List<SysUser> users) {
-        if (users == null || users.isEmpty()) {
-            return 0;
-        }
-
-        int count = 0;
-        try {
-            // 批处理阈值，每批次处理的最大记录数
-            final int BATCH_SIZE = 100;
-            List<List<SysUser>> batches = new ArrayList<>();
-
-            // 将用户列表分批，避免一次性处理过多记录
-            for (int i = 0; i < users.size(); i += BATCH_SIZE) {
-                int endIndex = Math.min(i + BATCH_SIZE, users.size());
-                batches.add(users.subList(i, endIndex));
-            }
-
-            // 按批次处理数据
-            for (List<SysUser> batch : batches) {
-                count += userMapper.batchUpdateUserDept(batch);
-            }
-
-            return count;
-        } catch (Exception e) {
-            logger.error("批量更新用户部门失败", e);
-            throw new ServiceException("批量更新用户部门失败");
-        }
-    }
-
-    /**
-     * 根据用户ID列表批量查询用户
-     *
-     * @param userIds 用户ID列表
-     * @return 用户列表
-     */
-    @Override
-    public List<SysUser> selectUsersByIds(List<Long> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        try {
-            // 优化查询：使用 IN 条件一次查询，减少数据库交互
-            return userMapper.selectUsersByIds(userIds);
-        } catch (Exception e) {
-            logger.error("批量查询用户信息失败", e);
-            throw new ServiceException("批量查询用户信息失败");
-        }
     }
 }

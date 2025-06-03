@@ -28,6 +28,14 @@ public interface SysCompMapper {
     List<SysComp> selectSysCompList(@Param("sysComp") SysComp sysComp, @Param("order") String order);
 
     /**
+     * 统计符合条件的竞赛记录数
+     *
+     * @param sysComp 竞赛信息查询条件
+     * @return 符合条件的记录数
+     */
+    int selectCountByCondition(SysComp sysComp);
+
+    /**
      * 新增竞赛信息
      *
      * @param sysComp 竞赛信息

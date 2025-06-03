@@ -123,5 +123,7 @@ public final class CacheConstants {
      */
     public static final int LOCK_TIMEOUT = 10;
 
-    public static final String JUDGE_ROLE_KEY = "sys_role:judge:";
+    public static final String USER_JUDGE_KEY = "user_judge:";
 }
+
+

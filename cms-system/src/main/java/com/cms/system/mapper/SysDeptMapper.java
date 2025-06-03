@@ -116,4 +116,11 @@ public interface SysDeptMapper
      * @return 结果
      */
     public int deleteDeptById(Long deptId);
+
+     /**
+     * 根据部门ID获取部门信息
+     * @param deptId
+     * @return
+     */
+    SysDept getDeptById(Long deptId);
 }

@@ -52,10 +52,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 判断用户是否是评委角色 -->
-    <select id="isJudge" parameterType="java.lang.Long" resultType="java.lang.Integer">
+    <select id="isJudge" resultType="java.lang.Integer">
         SELECT COUNT(1)
-        FROM sys_user_role
-        WHERE user_id = #{userId} AND role_id = 3
+        FROM sys_user_role ur
+        JOIN sys_role r ON ur.role_id = r.role_id
+        WHERE ur.user_id = #{userId} AND r.role_id = 3
+    </select>
+
+    <select id="selectRolesByUserId" parameterType="Long" resultMap="com.cms.system.mapper.SysUserMapper.RoleResult">
+        SELECT r.role_id, r.role_name, r.role_key, r.role_sort, r.data_scope, r.status AS role_status
+        FROM sys_role r
+        INNER JOIN sys_user_role ur ON r.role_id = ur.role_id
+        WHERE ur.user_id = #{userId}
     </select>
 
 </mapper>
